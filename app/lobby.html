@@ -1,4 +1,4 @@
-<title>Claim a Seat</title>
+<title>Lobby</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Public+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
 <style>
 :root{
@@ -114,6 +114,9 @@ svg{display:block}
 .act .fig{flex-shrink:0}
 .act .foot{padding:11px 15px 14px;display:flex;flex-direction:column;gap:10px}
 
+.dayhead{font-size:11.5px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;
+  color:var(--ink-3);padding:6px 2px 0;display:flex;align-items:center;gap:10px}
+.dayhead::after{content:"";flex:1;height:1px;background:var(--line)}
 .chips{display:flex;flex-wrap:wrap;gap:5px}
 .chip{font-size:10.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;
   padding:4px 8px;border-radius:6px;background:var(--card-2);color:var(--ink-2);border:1px solid var(--line-2)}
@@ -122,12 +125,19 @@ svg{display:block}
 .chip.bad{background:var(--red-bg);color:var(--red);border-color:transparent}
 .chip.gold{background:var(--gold-bg);color:var(--gold);border-color:transparent}
 
+/* activity mark */
+.arttile{width:52px;height:52px;border-radius:15px;display:grid;place-items:center;
+  background:var(--green-bg);color:var(--green);flex-shrink:0}
+
 /* progress */
 .prog{display:flex;flex-direction:column;gap:6px}
-.prog .track{height:9px;border-radius:99px;background:var(--card-2);border:1px solid var(--line-2);
+.prog .track{height:10px;border-radius:99px;background:var(--card-2);border:1px solid var(--line-2);
   overflow:hidden;position:relative}
-.prog .fill{height:100%;background:var(--green);border-radius:99px;transition:width .5s cubic-bezier(.2,.8,.2,1)}
+.prog .fill{position:absolute;left:0;top:0;height:100%;background:var(--green);border-radius:99px;
+  transition:width .5s cubic-bezier(.2,.8,.2,1)}
+.prog .fill.soft{background:color-mix(in srgb,var(--green) 32%,transparent)}
 .prog .fill.gold{background:var(--gold)}
+.prog .notch{position:absolute;top:0;bottom:0;width:2px;background:var(--ink-3);opacity:.45}
 .prog .cap{font-size:12.5px;color:var(--ink-2);display:flex;justify-content:space-between;gap:8px}
 .prog .cap b{color:var(--ink);font-weight:700}
 
@@ -240,6 +250,18 @@ svg{display:block}
 @keyframes spark{0%{opacity:1;transform:translate(0,0) scale(1) rotate(0)}
   100%{opacity:0;transform:translate(var(--dx),var(--dy)) scale(.3) rotate(180deg)}}
 
+.signin{margin-left:auto;font-size:13px;font-weight:700;color:var(--green);
+  border:1.5px solid var(--green);border-radius:999px;padding:5px 13px}
+.auth{position:fixed;inset:0;z-index:78;outline:none;background:var(--ground);overflow-y:auto;
+  display:flex;flex-direction:column;padding:22px 22px calc(26px + env(safe-area-inset-bottom,0px))}
+.auth .atop{display:flex;align-items:center;gap:12px;margin-bottom:22px}
+.auth .abrand{font-family:'Fraunces',serif;font-weight:700;font-size:24px;letter-spacing:-.025em}
+.auth .aback{margin-left:auto;font-size:13.5px;font-weight:600;color:var(--ink-2)}
+.auth .abody{flex:1;display:flex;flex-direction:column;gap:15px;max-width:420px;width:100%;margin:0 auto}
+.auth h2{font-size:27px;font-weight:700;letter-spacing:-.02em;line-height:1.15}
+.auth .abody>p{font-size:15.5px;color:var(--ink-2);line-height:1.5;margin-top:-6px}
+.auth .codein{font-family:'IBM Plex Mono',monospace;font-size:26px;letter-spacing:.32em;
+  text-align:center;font-variant-numeric:tabular-nums}
 .onb{position:fixed;inset:0;z-index:75;outline:none;background:var(--ground);display:flex;flex-direction:column;
   padding:26px 24px calc(24px + env(safe-area-inset-bottom,0px));gap:16px}
 .onb .body{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;
@@ -266,11 +288,74 @@ svg{display:block}
   border:1.5px solid var(--clay);color:var(--clay);background:transparent}
 .demo button:active{background:var(--card)}
 
+.matchcard{display:block;width:100%;border-radius:var(--r);padding:17px 18px;text-align:left;
+  background:var(--green);color:var(--ground);box-shadow:0 4px 0 var(--green-deep);
+  position:relative;top:0;transition:top .07s ease, box-shadow .07s ease}
+.matchcard:active{top:3px;box-shadow:0 1px 0 var(--green-deep)}
+.matchcard .k{font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;opacity:.8}
+.matchcard .t{font-family:'Fraunces',serif;font-size:23px;font-weight:600;margin-top:3px;line-height:1.15}
+.matchcard .d{font-size:13.5px;margin-top:5px;opacity:.9;line-height:1.4}
+.matchcard.waiting{background:var(--card-2);color:var(--ink);box-shadow:none;
+  border:2px dashed var(--line);cursor:default}
+.matchcard.waiting .k{color:var(--ink-3)}
+.matchcard.have{background:var(--ink);box-shadow:0 4px 0 rgba(0,0,0,.35)}
+
+.overlap{display:flex;flex-direction:column;gap:8px;width:100%;max-width:340px;margin-top:4px}
+.orow{display:flex;flex-direction:column;gap:2px;background:var(--card);border:1px solid var(--line);
+  border-radius:11px;padding:11px 14px;text-align:left}
+.orow .ok{font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}
+.orow .ov{font-size:15px;font-weight:600;color:var(--ink)}
+
+.plan{background:var(--card-2);border:1px solid var(--line-2);border-radius:12px;padding:14px 16px;
+  display:flex;flex-direction:column;gap:4px}
+.plan .k{font-size:11px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-3)}
+.plan .pw{font-family:'Fraunces',serif;font-size:19px;font-weight:600;line-height:1.2}
+.plan .pm{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--ink-2);margin-top:2px}
+.plan .hint{font-size:13px;color:var(--ink-3);margin-top:6px;line-height:1.45}
+
+.chipset{display:flex;flex-wrap:wrap;gap:7px}
+.tog{font-size:13px;font-weight:600;padding:7px 12px;border-radius:999px;
+  border:1.5px solid var(--line);background:var(--card);color:var(--ink-2);transition:transform .07s}
+.tog:active{transform:scale(.95)}
+.tog.on{background:var(--green);border-color:var(--green);color:var(--ground)}
+
+.arrive{background:var(--green-bg);border:1px solid transparent;border-radius:14px;
+  padding:16px;display:flex;flex-direction:column;gap:10px}
+.arrive .k{font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--green)}
+.arrive .spot{font-family:'Fraunces',serif;font-size:21px;font-weight:600;color:var(--green-ink);line-height:1.2}
+.arrive .word{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap}
+.arrive .wl{font-size:13px;color:var(--green-ink);opacity:.75}
+.arrive .wv{font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:600;letter-spacing:.08em;
+  color:var(--green-ink);background:var(--card);padding:5px 12px;border-radius:9px}
+.arrive .hint{font-size:13px;color:var(--green-ink);opacity:.8;line-height:1.45}
+.arrive .note{background:var(--card);border-left-color:var(--green)}
+.person.ishere .nm::after{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;
+  background:var(--green);margin-left:7px;vertical-align:middle}
+.person.ishere .rl{color:var(--green)}
 .why{background:var(--card-2);border:1px solid var(--line-2);border-radius:12px;padding:13px 15px}
 .why .k{font-size:11px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-3);margin-bottom:5px}
 .why p{font-size:14px;color:var(--ink-2);line-height:1.5}
 .fence{border:1.5px solid var(--line);border-left:4px solid var(--clay);border-radius:12px;
   padding:15px;display:flex;flex-direction:column;gap:9px;background:var(--card-2);margin-top:6px}
+.showbar{position:fixed;left:0;right:0;bottom:0;z-index:60;max-width:468px;margin:0 auto;
+  background:var(--ink);color:var(--ground);display:grid;
+  grid-template-columns:auto 1fr auto;grid-template-areas:"n say say" "n nav x";
+  gap:4px 12px;align-items:center;
+  padding:13px 16px calc(13px + env(safe-area-inset-bottom,0px));
+  box-shadow:0 -10px 30px -20px rgba(0,0,0,.8)}
+.showbar .n{grid-area:n;font-family:'IBM Plex Mono',monospace;font-size:12px;opacity:.55;
+  font-variant-numeric:tabular-nums}
+.showbar .say{grid-area:say;font-size:14.5px;line-height:1.4;max-width:none}
+.showbar .nav{grid-area:nav;display:flex;gap:7px;margin-top:4px}
+.showbar .sb{border:1px solid rgba(255,255,255,.28);color:inherit;border-radius:9px;
+  padding:7px 13px;font-size:13.5px;font-weight:700}
+.showbar .sb.primary{background:var(--green);border-color:var(--green)}
+.showbar .sb[disabled]{opacity:.35}
+.showbar .sx{grid-area:x;font-size:12.5px;opacity:.6;text-decoration:underline;
+  text-underline-offset:3px;align-self:end;padding-bottom:7px}
+body.presenting .tabbar{display:none}
+body.presenting .sheet{max-height:calc(92svh - 128px);margin-bottom:128px}
+body.presenting .screens{padding-bottom:150px}
 .foot{font-size:12.5px;color:var(--ink-3);line-height:1.5}
 .switchrow{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line-2)}
 .switchrow:last-child{border-bottom:none}
@@ -292,11 +377,13 @@ svg{display:block}
   <div class="topbar">
     <span class="brand">Lobby</span>
     <button class="streak zero" id="streak" type="button" aria-label="Your streak"></button>
+    <button class="signin" id="signin" type="button" hidden>Sign in</button>
   </div>
 
   <div class="screens">
     <section class="screen" id="screen-slate">
       <div id="urgent-slot"></div>
+      <div id="match-slot"></div>
       <div class="head"><h2 id="slate-title">This week</h2><p class="sub" id="slate-sub"></p></div>
       <div class="filters" id="filters" role="group" aria-label="Filter the slate">
         <button type="button" data-f="alcohol_free" aria-pressed="false">alcohol-free</button>
@@ -329,12 +416,14 @@ svg{display:block}
 <div class="veil" id="veil" hidden><div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title"></div></div>
 <div class="celebrate" id="celebrate" hidden role="dialog" aria-modal="true" aria-labelledby="celebrate-title"></div>
 <div class="onb" id="onb" hidden role="dialog" aria-modal="true" aria-labelledby="onb-title"></div>
+<div class="auth" id="auth" hidden role="dialog" aria-modal="true" aria-labelledby="auth-title"></div>
 
 <script>
 (function(){
 "use strict";
 
 var CAP=6, FLOOR=4, PRICE=5;
+var BUILD="Build 12 · 13 Sep 2026";
 var CONFIRM_OPEN_H=36, CONFIRM_CLOSE_H=24, EVENT_LEN_H=3;
 var LS_ME="lobby.me.v1", LS_FILTERS="lobby.filters.v1", LS_LOCAL="lobby.localdb.v1",
     LS_ONB="lobby.onb.v1", LS_SOUND="lobby.sound.v1";
@@ -346,8 +435,8 @@ var ICEBREAKERS=[
   "Two truths and a module you regret. Go."
 ];
 
-var state={ready:false,mode:"connecting",blocks:{},me:null,activities:[],seats:{},chats:{},signals:{},
-  students:{},clockOffset:0,filters:{},tab:"slate",sound:true,seenSeats:{}};
+var state={ready:false,mode:"connecting",blocks:{},me:null,pool:[],matches:[],show:{on:false,i:0,busy:false},activities:[],seats:{},chats:{},signals:{},
+  students:{},waits:{},clockOffset:0,filters:{},tab:"slate",sound:true,seenSeats:{}};
 function capOf(a){ return (a&&a.capacity)||CAP; }
 
 /* ---------- utils ---------- */
@@ -357,11 +446,16 @@ function uid(p){return (p||"")+Math.random().toString(36).slice(2,9)+Date.now().
 function lsGet(k,d){try{var v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch(e){return d;}}
 function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
 function sleep(ms){return new Promise(function(r){setTimeout(r,ms);});}
+function ordinal(n){
+  var sfx=["th","st","nd","rd"], v=n%100;
+  return n+(sfx[(v-20)%10]||sfx[v]||sfx[0]);
+}
 function initials(n){n=(n||"?").trim();var p=n.split(/\s+/);return ((p[0]||"?")[0]+(p[1]?p[1][0]:"")).toUpperCase();}
 function reduced(){try{return window.matchMedia("(prefers-reduced-motion: reduce)").matches;}catch(e){return false;}}
 
 var toastTimer=null;
 function toast(msg,bad){
+  if(state.show.on&&!bad)return;          // no chatter over the presenter caption
   var o=document.querySelector(".toast"); if(o)o.remove();
   var t=el("div","toast"+(bad?" bad":""),msg); document.body.appendChild(t);
   clearTimeout(toastTimer); toastTimer=setTimeout(function(){if(t.parentNode)t.remove();},4000);
@@ -417,6 +511,56 @@ function icon(name,size){
   return svg;
 }
 
+/* Each activity gets a drawn mark so the slate is scannable — same 2px round
+   stroke language as the tab icons, so it reads as one system rather than clip art. */
+var GLYPHS={
+  quiz:{p:["M12 6a5 5 0 0 1 5 5H7a5 5 0 0 1 5-5Z","M4 11h16","M12 3v1.6","M8 15h8"]},
+  dice:{p:["M7 4h10a3 3 0 0 1 3 3v10a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3V7a3 3 0 0 1 3-3Z"],
+        c:[[8.5,8.5,1.15],[12,12,1.15],[15.5,15.5,1.15]]},
+  pad:{p:["M8 7h8a5 5 0 0 1 5 5v1a3.5 3.5 0 0 1-6.2 2.2l-.7-.9h-4.2l-.7.9A3.5 3.5 0 0 1 3 13v-1a5 5 0 0 1 5-5Z",
+          "M7.5 11.5h3","M9 10v3"], c:[[15.7,11.2,.9],[17.6,13.4,.9]]},
+  holds:{p:["M6.5 19c1.5-3.5 3.5-5.5 5-8.5s1.5-5 1.5-5"],
+         c:[[6.5,17.5,2],[12,11,2.4],[17,5.5,1.8]]},
+  reel:{p:["M4 6h16a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1Z","M10 9.5l5 2.5-5 2.5z"]},
+  shoe:{p:["M3 16h8l3.5-3 3 1.5A4 4 0 0 1 21 18H3z","M3 16v-3","M6.5 13v3"]},
+  pan:{p:["M3 11h12a4 4 0 0 1 0 8H7a4 4 0 0 1-4-4z","M15 11h6"]},
+  table:{p:["M12 9a5 3 0 1 0 0 6 5 3 0 1 0 0-6Z"],
+         c:[[12,4.5,1.6],[18.5,8.5,1.6],[18.5,15.5,1.6],[12,19.5,1.6],[5.5,15.5,1.6],[5.5,8.5,1.6]]}
+};
+function glyph(name,size){
+  var g=GLYPHS[name]||GLYPHS.table, ns="http://www.w3.org/2000/svg", z=size||26;
+  var svg=document.createElementNS(ns,"svg");
+  svg.setAttribute("viewBox","0 0 24 24");
+  svg.setAttribute("width",String(z)); svg.setAttribute("height",String(z));
+  svg.setAttribute("fill","none"); svg.setAttribute("stroke","currentColor");
+  svg.setAttribute("stroke-width","1.8"); svg.setAttribute("stroke-linecap","round");
+  svg.setAttribute("stroke-linejoin","round"); svg.setAttribute("aria-hidden","true");
+  (g.p||[]).forEach(function(d){
+    var e=document.createElementNS(ns,"path"); e.setAttribute("d",d); svg.appendChild(e);});
+  (g.c||[]).forEach(function(c){
+    var e=document.createElementNS(ns,"circle");
+    e.setAttribute("cx",String(c[0]));e.setAttribute("cy",String(c[1]));e.setAttribute("r",String(c[2]));
+    e.setAttribute("fill","currentColor");e.setAttribute("stroke","none");svg.appendChild(e);});
+  return svg;
+}
+function artFor(a){
+  if(a.art&&GLYPHS[a.art])return a.art;
+  var t=(a.title||"").toLowerCase();
+  if(/trivia|quiz|pub/.test(t))return "quiz";
+  if(/board|game night|cards|chess/.test(t))return "dice";
+  if(/smash|esports|gaming|valorant|mario/.test(t))return "pad";
+  if(/boulder|climb|wall/.test(t))return "holds";
+  if(/film|screening|cinema|movie/.test(t))return "reel";
+  if(/run|jog|park/.test(t))return "shoe";
+  if(/cook|bake|food|dinner/.test(t))return "pan";
+  return "table";
+}
+function artTile(a,size){
+  var d=el("div","arttile");
+  d.appendChild(glyph(artFor(a),size||27));
+  return d;
+}
+
 /* ---------- time ---------- */
 function now(){return Date.now()+state.clockOffset;}
 function ts(a){return new Date(a.startsAt).getTime();}
@@ -445,40 +589,60 @@ function fmtLeft(ms){
 }
 
 /* ---------- store ---------- */
-var localSubs=[];
-function localData(){return lsGet(LS_LOCAL,{});}
-function localWrite(m){lsSet(LS_LOCAL,m);localSubs.forEach(function(f){try{f();}catch(e){}});}
+var localSubs=[], localMem=null, localSaveTimer=null, localDirty=false;
+function localData(){ if(!localMem) localMem=lsGet(LS_LOCAL,{}); return localMem; }
+/* only ever write back what THIS page changed, so a second tab is never clobbered */
+function flushLocal(){ if(localDirty&&localMem){ lsSet(LS_LOCAL,localMem); localDirty=false; } }
+function localWrite(m,path){
+  localMem=m; localDirty=true;
+  clearTimeout(localSaveTimer);
+  localSaveTimer=setTimeout(flushLocal,200);
+  localSubs.forEach(function(sub){
+    try{ if(!path||sub.match(path)) sub.fire(); }catch(e){}
+  });
+}
+window.addEventListener("pagehide",flushLocal);
+document.addEventListener("visibilitychange",function(){ if(document.hidden) flushLocal(); });
+function addLocalSub(match,fire){
+  var sub={match:match,fire:fire};
+  localSubs.push(sub); fire();
+  return function(){ var i=localSubs.indexOf(sub); if(i>=0)localSubs.splice(i,1); };
+}
 function makeLocalStore(){
+  function snapOf(path){
+    var m=localData();
+    return {id:path.split("/").pop(),
+      exists:Object.prototype.hasOwnProperty.call(m,path),
+      data:function(){return m[path];}};
+  }
   function docRef(path){
     return {path:path,
-      get:function(){var m=localData();return Promise.resolve({id:path.split("/").pop(),
-        exists:Object.prototype.hasOwnProperty.call(m,path),data:function(){return m[path];}});},
-      set:function(b){var m=localData();m[path]=JSON.parse(JSON.stringify(b));localWrite(m);return Promise.resolve();},
-      update:function(b){var m=localData();if(!Object.prototype.hasOwnProperty.call(m,path))
-        return Promise.reject({code:"invalid_argument",message:"no such document"});
-        Object.keys(b).forEach(function(k){m[path][k]=b[k];});localWrite(m);return Promise.resolve();},
-      "delete":function(){var m=localData();delete m[path];localWrite(m);return Promise.resolve();},
+      get:function(){return Promise.resolve(snapOf(path));},
+      set:function(b){var m=localData();m[path]=JSON.parse(JSON.stringify(b));localWrite(m,path);return Promise.resolve();},
+      update:function(b){var m=localData();
+        if(!Object.prototype.hasOwnProperty.call(m,path))
+          return Promise.reject({code:"invalid_argument",message:"no such document"});
+        Object.keys(b).forEach(function(k){m[path][k]=b[k];});localWrite(m,path);return Promise.resolve();},
+      "delete":function(){var m=localData();delete m[path];localWrite(m,path);return Promise.resolve();},
       acquire:function(){return Promise.resolve({acquired:true});},
       onSnapshot:function(next){
-        var fire=function(){var m=localData();next({id:path.split("/").pop(),
-          exists:Object.prototype.hasOwnProperty.call(m,path),data:function(){return m[path];}});};
-        localSubs.push(fire);fire();
-        return function(){var i=localSubs.indexOf(fire);if(i>=0)localSubs.splice(i,1);};}
+        return addLocalSub(function(p){return p===path;},function(){next(snapOf(path));});}
     };
   }
   function collRef(path){
+    function inColl(k){
+      return k.indexOf(path+"/")===0 && k.slice(path.length+1).indexOf("/")===-1;
+    }
     function match(){var m=localData(),out=[];
       Object.keys(m).forEach(function(k){
-        if(k.indexOf(path+"/")===0&&k.slice(path.length+1).indexOf("/")===-1)
-          out.push({id:k.split("/").pop(),exists:true,data:(function(b){return function(){return b;};})(m[k])});
+        if(inColl(k)) out.push({id:k.split("/").pop(),exists:true,
+          data:(function(b){return function(){return b;};})(m[k])});
       });out.sort(function(a,b){return a.id<b.id?-1:1;});return out;}
     return {path:path,
       doc:function(id){return docRef(path+"/"+(id||uid("d")));},
       get:function(){var d=match();return Promise.resolve({docs:d,size:d.length,empty:!d.length});},
       onSnapshot:function(next){
-        var fire=function(){var d=match();next({docs:d,size:d.length,empty:!d.length});};
-        localSubs.push(fire);fire();
-        return function(){var i=localSubs.indexOf(fire);if(i>=0)localSubs.splice(i,1);};}
+        return addLocalSub(inColl,function(){var d=match();next({docs:d,size:d.length,empty:!d.length});});}
     };
   }
   return {doc:docRef,collection:collRef};
@@ -490,14 +654,31 @@ function seatColl(id){return store.collection("activities/"+id+"/seats");}
 function seatDoc(id,n){return store.doc("activities/"+id+"/seats/s"+n);}
 function chatColl(id){return store.collection("activities/"+id+"/chat");}
 function chatDoc(id,t){return store.doc("activities/"+id+"/chat/t"+(t||1));}
+function waitColl(id){return store.collection("activities/"+id+"/waitlist");}
+function waitDoc(id,sid){return store.doc("activities/"+id+"/waitlist/"+sid);}
 function signalColl(id){return store.collection("activities/"+id+"/signals");}
 function signalDoc(id,sid){return store.doc("activities/"+id+"/signals/"+sid);}
 function studentDoc(sid){return store.doc("students/"+sid);}
+function poolColl(){return store.collection("pool");}
+function poolDoc(sid){return store.doc("pool/"+sid);}
+function matchColl(){return store.collection("matches");}
+function matchDoc(id){return store.doc("matches/"+id);}
 function clockDoc(){return store.doc("meta/clock");}
 
 /* ---------- derived ---------- */
 function seatsOf(id){return state.seats[id]||[];}
-function takenSeats(id){return seatsOf(id).filter(function(s){return s&&s.studentId;});}
+function takenSeats(id){return seatsOf(id).filter(function(s){return s&&s.studentId&&!s.released;});}
+function mySeatAny(id){if(!state.me)return null;
+  var m=seatsOf(id).filter(function(s){return s&&s.studentId===state.me.id;});return m[0]||null;}
+function myLostSeat(id){var s=mySeatAny(id);return (s&&s.released)?s:null;}
+function waitQueue(id){
+  return (state.waits[id]||[]).slice().sort(function(a,b){return (a.joinedAt||0)-(b.joinedAt||0);});}
+function myWaitPos(id){
+  if(!state.me)return 0;
+  var q=waitQueue(id);
+  for(var i=0;i<q.length;i++) if(q[i].studentId===state.me.id) return i+1;
+  return 0;}
+function seatsFree(a){return capOf(a)-takenSeats(a.id).length;}
 function confirmedSeats(id){return takenSeats(id).filter(function(s){return s.confirmed;});}
 function mySeat(id){if(!state.me)return null;
   var m=takenSeats(id).filter(function(s){return s.studentId===state.me.id;});return m[0]||null;}
@@ -519,24 +700,20 @@ function seedRand(str){
     t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; };
 }
 function tableCount(n){ if(n<=6)return 1; var k=Math.ceil(n/6); if(n/k<4&&k>1)k--; return k; }
-function isBlockedPair(x,y){
-  return !!(state.blocks[x+"__"+y]||state.blocks[y+"__"+x]);
-}
-/* have these two sat at the same table at an EARLIER activity? */
-function metBefore(actId,x,y){
-  var thisAct=state.activities.filter(function(a){return a.id===actId;})[0];
-  if(!thisAct)return false;
-  return state.activities.some(function(a){
-    if(a.id===actId||ts(a)>=ts(thisAct))return false;
-    var ids={}; confirmedSeats(a.id).forEach(function(s){ids[s.studentId]=1;});
-    if(!(ids[x]&&ids[y]))return false;
-    var tb=seatingFor(a.id), same=false;
-    tb.forEach(function(t){
-      var h={}; t.forEach(function(m){h[m.studentId]=1;});
-      if(h[x]&&h[y])same=true;
-    });
-    return same;
-  });
+function isBlockedPair(x,y){ return !!(state.blocks[x+"__"+y]||state.blocks[y+"__"+x]); }
+function pairKey(x,y){ return x<y ? x+"|"+y : y+"|"+x; }
+
+/* Seating is computed for the WHOLE week in one chronological pass, so
+   "have these two met before" is a map lookup rather than a recursive
+   re-solve of every earlier activity. Recomputing lazily on any change
+   that could move someone. */
+var seatBook=null;                 // {tables:{actId:[[seat]]}, met:{pair:actIndex}, order:{actId:idx}}
+function markSeatingDirty(){ seatBook=null; }
+
+function hasBlockedPair(t){
+  for(var i=0;i<t.length;i++)for(var j=i+1;j<t.length;j++)
+    if(isBlockedPair(t[i].studentId,t[j].studentId))return true;
+  return false;
 }
 function mixPenalty(table){
   var counts={}, known=0;
@@ -549,45 +726,85 @@ function mixPenalty(table){
   var allowed=Math.ceil(known/2);
   return top>allowed ? (top-allowed)*1.5 : 0;
 }
-function tableCost(actId,table){
+function tableCost(table,met,idx){
   var c=mixPenalty(table);
   for(var i=0;i<table.length;i++)for(var j=i+1;j<table.length;j++){
     var x=table[i].studentId, y=table[j].studentId;
     if(isBlockedPair(x,y)) c+=1000;
-    else if(metBefore(actId,x,y)) c+=3;
+    else { var seen=met[pairKey(x,y)]; if(seen!=null&&seen<idx) c+=3; }
   }
   return c;
 }
-var seatingCache={};
-function seatingFor(actId){
+/* pull one member of a blocked pair onto another table; returns true if it moved */
+function repairBlocked(tables){
+  for(var t1=0;t1<tables.length;t1++){
+    if(!hasBlockedPair(tables[t1]))continue;
+    for(var x=0;x<tables[t1].length;x++){
+      for(var t2=0;t2<tables.length;t2++){
+        if(t2===t1)continue;
+        for(var y=0;y<tables[t2].length;y++){
+          var A=tables[t1][x], B=tables[t2][y];
+          tables[t1][x]=B; tables[t2][y]=A;
+          if(!hasBlockedPair(tables[t1])&&!hasBlockedPair(tables[t2]))return true;
+          tables[t1][x]=A; tables[t2][y]=B;
+        }
+      }
+    }
+  }
+  return false;
+}
+function computeSeating(actId,met,idx){
   var roster=confirmedSeats(actId).slice().sort(function(a,b){
     return (a.claimedAt||0)-(b.claimedAt||0) || (a.studentId<b.studentId?-1:1);
   });
   var n=roster.length; if(!n)return [];
-  var key=actId+"|"+roster.map(function(r){return r.studentId;}).join(",")+"|"+Object.keys(state.blocks).join(",");
-  if(seatingCache[key])return seatingCache[key];
   var k=tableCount(n), tables=[], i, j;
-  if(k===1){ tables=[roster]; seatingCache[key]=tables; return tables; }
+  if(k===1)return [roster];
   var order=roster.slice(), rnd=seedRand(actId);
   for(i=order.length-1;i>0;i--){ j=Math.floor(rnd()*(i+1)); var tmp=order[i];order[i]=order[j];order[j]=tmp; }
   for(i=0;i<k;i++)tables.push([]);
   var sizes=[]; for(i=0;i<k;i++) sizes.push(Math.floor(n/k)+(i<n%k?1:0));
-  var idx=0; for(i=0;i<k;i++)for(j=0;j<sizes[i];j++) tables[i].push(order[idx++]);
-  for(var pass=0;pass<40;pass++){
+  var at=0; for(i=0;i<k;i++)for(j=0;j<sizes[i];j++) tables[i].push(order[at++]);
+  for(var pass=0;pass<12;pass++){
     var improved=false;
     for(var ta=0;ta<k;ta++)for(var tb=ta+1;tb<k;tb++)
-      for(var x=0;x<tables[ta].length;x++)for(var y=0;y<tables[tb].length;y++){
-        var before=tableCost(actId,tables[ta])+tableCost(actId,tables[tb]);
-        var A=tables[ta][x], B=tables[tb][y];
-        tables[ta][x]=B; tables[tb][y]=A;
-        var after=tableCost(actId,tables[ta])+tableCost(actId,tables[tb]);
-        if(after<before-1e-9){ improved=true; }
-        else { tables[ta][x]=A; tables[tb][y]=B; }
+      for(var xi=0;xi<tables[ta].length;xi++)for(var yi=0;yi<tables[tb].length;yi++){
+        var before=tableCost(tables[ta],met,idx)+tableCost(tables[tb],met,idx);
+        var A=tables[ta][xi], B=tables[tb][yi];
+        tables[ta][xi]=B; tables[tb][yi]=A;
+        if(tableCost(tables[ta],met,idx)+tableCost(tables[tb],met,idx)<before-1e-9) improved=true;
+        else { tables[ta][xi]=A; tables[tb][yi]=B; }
       }
     if(!improved)break;
   }
-  seatingCache[key]=tables;
+  for(var r=0;r<tables.length&&repairBlocked(tables);r++){}   // blocking is a hard rule
   return tables;
+}
+function buildSeatBook(){
+  var book={tables:{},met:{},order:{}};
+  var acts=state.activities.slice().sort(function(a,b){return ts(a)-ts(b);});
+  acts.forEach(function(a,idx){
+    book.order[a.id]=idx;
+    var tables=computeSeating(a.id,book.met,idx);
+    book.tables[a.id]=tables;
+    tables.forEach(function(t){
+      for(var i=0;i<t.length;i++)for(var j=i+1;j<t.length;j++){
+        var key=pairKey(t[i].studentId,t[j].studentId);
+        if(book.met[key]==null) book.met[key]=idx;    // first time they shared a table
+      }
+    });
+  });
+  seatBook=book;
+}
+function seatingFor(actId){
+  if(!seatBook)buildSeatBook();
+  return seatBook.tables[actId]||[];
+}
+/* did x and y share a table at something EARLIER than this activity? */
+function metBefore(actId,x,y){
+  if(!seatBook)buildSeatBook();
+  var seen=seatBook.met[pairKey(x,y)], idx=seatBook.order[actId];
+  return seen!=null && idx!=null && seen<idx;
 }
 function myTableIndex(actId){
   if(!state.me)return -1;
@@ -603,19 +820,20 @@ function myTable(actId){
 }
 /* the honest answer to "why am I sat with these people" */
 function whyThisTable(a){
-  var mine=myTable(a.id); if(mine.length<2)return null;
+  var mine=myTable(a.id); if(mine.length<2||!state.me)return null;
   var tb=seatingFor(a.id);
   var others=mine.filter(function(m){return m.studentId!==state.me.id;});
   var fresh=others.filter(function(m){return !metBefore(a.id,state.me.id,m.studentId);}).length;
   var bits=["You all chose "+a.title+" — that's the whole match"];
-  if(tb.length>1) bits.push(others.length+1+" of the "+confirmedSeats(a.id).length+" going are at your table, split so nobody is in a group of two");
-  if(fresh===others.length && others.length) bits.push("none of you have sat together before");
+  if(tb.length>1) bits.push(mine.length+" of the "+confirmedSeats(a.id).length+
+    " going are at your table, split so nobody ends up in a pair");
+  if(others.length && fresh===others.length) bits.push("none of you have sat together before");
   else if(fresh) bits.push(fresh+" of them you haven't met before");
   return bits.join(". ")+".";
 }
 function myActivities(){
   if(!state.me)return [];
-  return state.activities.filter(function(a){return !!mySeat(a.id);})
+  return state.activities.filter(function(a){return !!mySeatAny(a.id)||myWaitPos(a.id)>0;})
     .sort(function(x,y){return ts(x)-ts(y);});}
 function myCheckin(a){return (state.signals[a.id]||{})[(state.me?state.me.id:"")+"__checkin"];}
 function mySignal(a){return (state.signals[a.id]||{})[state.me?state.me.id:""];}
@@ -632,6 +850,218 @@ function stats(){
     var k=d.getFullYear()+"-"+Math.floor((d.getTime()-new Date(d.getFullYear(),0,1).getTime())/6048e5);
     weeks[k]=1; });
   return {tables:attended.length, people:Object.keys(met).length, streak:Object.keys(weeks).length};
+}
+
+/* ---------- what you're into ---------- */
+var LIKES=["Valorant","Minecraft","Smash Bros","League","anime","K-drama","A24 films",
+  "horror films","indie music","K-pop","metal","climbing","football","gym","running",
+  "chess","board games","D&D","photography","cooking","coffee","CS","engineering","art"];
+var DISLIKES=["early mornings","loud clubs","small talk","group projects","spicy food",
+  "karaoke","camping","crowds","horror films","running"];
+var SERVERS=["MMU CS Year 1","Valorant EU Chill","Anime Club","Campus Climbing",
+  "Study Grind 24/7","Indie Devs"];
+var MATCH_SIZE=4;
+
+function meProfile(){ return (state.students[state.me?state.me.id:""])||{}; }
+function listOf(sid,field){ var st=state.students[sid]||{}; return st[field]||[]; }
+function shared(a,b){ var h={}; a.forEach(function(x){h[x]=1;});
+  return b.filter(function(x){return h[x];}); }
+
+/* Why two people fit: a shared Discord server is the strongest signal because it is
+   narrow, a shared like is next, and a shared dislike is real bonding. A like that is
+   someone else's dislike costs. */
+function pairScore(x,y){
+  var sv=shared(listOf(x,"servers"),listOf(y,"servers")).length;
+  var lk=shared(listOf(x,"likes"),listOf(y,"likes")).length;
+  var dk=shared(listOf(x,"dislikes"),listOf(y,"dislikes")).length;
+  var clash=shared(listOf(x,"likes"),listOf(y,"dislikes")).length
+          + shared(listOf(y,"likes"),listOf(x,"dislikes")).length;
+  return sv*3 + lk*2 + dk*1 - clash*1.5;
+}
+function overlapWith(x,y){
+  return { servers:shared(listOf(x,"servers"),listOf(y,"servers")),
+           likes:shared(listOf(x,"likes"),listOf(y,"likes")),
+           dislikes:shared(listOf(x,"dislikes"),listOf(y,"dislikes")) };
+}
+/* what the whole group has in common, for the reveal */
+function groupOverlap(ids){
+  var out={servers:[],likes:[],dislikes:[]};
+  ["servers","likes","dislikes"].forEach(function(f){
+    var counts={};
+    ids.forEach(function(id){ listOf(id,f).forEach(function(v){ counts[v]=(counts[v]||0)+1; }); });
+    Object.keys(counts).forEach(function(v){ if(counts[v]>=2) out[f].push({v:v,n:counts[v]}); });
+    out[f].sort(function(a,b){return b.n-a.n;});
+  });
+  return out;
+}
+function myMatch(){
+  if(!state.me)return null;
+  var mine=state.matches.filter(function(m){
+    return (m.members||[]).indexOf(state.me.id)>=0 && !m.closed;
+  }).sort(function(a,b){return (b.createdAt||0)-(a.createdAt||0);});
+  return mine[0]||null;
+}
+function inPool(){ return !!state.pool.filter(function(x){return state.me&&x.studentId===state.me.id;})[0]; }
+
+async function findPeople(){
+  if(!state.me){ toast("Tell us who you are first — the You tab.",true); switchTab("you"); return; }
+  if(myMatch()){ toast("You already have a match open."); switchTab("week"); return; }
+  try{ await poolDoc(state.me.id).set({studentId:state.me.id,name:state.me.name,at:Date.now()}); }
+  catch(e){ toast(dbFail(e),true); return; }
+  render();
+  await tryFormMatch();
+}
+async function leavePool(){
+  if(!state.me)return;
+  try{ await poolDoc(state.me.id)["delete"](); toast("Stopped looking."); render(); }
+  catch(e){ toast(dbFail(e),true); }
+}
+var matchBusy=false;
+async function tryFormMatch(){
+  if(!state.me||matchBusy||myMatch())return;
+  var others=state.pool.filter(function(x){return x.studentId!==state.me.id;});
+  if(!inPool()||others.length<MATCH_SIZE-1)return;
+  matchBusy=true;
+  try{
+    var me=state.me.id;
+    var ranked=others.map(function(o){ return {id:o.studentId,name:o.name,s:pairScore(me,o.studentId)}; })
+      .filter(function(o){ return !isBlockedPair(me,o.id); })
+      .sort(function(a,b){ return b.s-a.s; });
+    if(ranked.length<MATCH_SIZE-1)return;
+    var picked=ranked.slice(0,MATCH_SIZE-1);
+    var ids=[me].concat(picked.map(function(p){return p.id;}));
+    var sugg=state.activities.filter(function(a){return phaseOf(a)!=="done";})
+      .sort(function(x,y){return ts(x)-ts(y);})[0];
+    var id=uid("m");
+    await matchDoc(id).set({
+      id:id, members:ids, createdAt:Date.now(), closed:false,
+      proposal:{ what: sugg?sugg.title:"Coffee somewhere on campus",
+                 where: sugg?meetAt(sugg):"Somewhere public on campus",
+                 when: sugg?fmtWhen(sugg):"This week, evening",
+                 by:me, at:Date.now() },
+      agreed:[me]
+    });
+    for(var i=0;i<ids.length;i++){ try{ await poolDoc(ids[i])["delete"](); }catch(e){} }
+    ding("big");
+    render();
+    showMatchReveal(id);
+  }catch(e){ toast(dbFail(e),true); }
+  finally{ matchBusy=false; }
+}
+async function proposeTime(m,what,where,when){
+  try{
+    await matchDoc(m.id).update({
+      proposal:{what:what,where:where,when:when,by:state.me.id,at:Date.now()},
+      agreed:[state.me.id]                       // a new plan needs agreeing again
+    });
+    toast("Sent. The others see it straight away.");
+    render();
+  }catch(e){ toast(dbFail(e),true); }
+}
+async function agreePlan(m){
+  var a=(m.agreed||[]).slice();
+  if(a.indexOf(state.me.id)>=0)return;
+  a.push(state.me.id);
+  try{ await matchDoc(m.id).update({agreed:a}); ding(); render(); }
+  catch(e){ toast(dbFail(e),true); }
+}
+async function leaveMatch(m){
+  var mem=(m.members||[]).filter(function(x){return x!==state.me.id;});
+  try{
+    if(mem.length<2) await matchDoc(m.id).update({closed:true});
+    else await matchDoc(m.id).update({members:mem,
+      agreed:(m.agreed||[]).filter(function(x){return x!==state.me.id;})});
+    toast("You're out of that one.");
+    render();
+  }catch(e){ toast(dbFail(e),true); }
+}
+
+/* ---------- arriving somewhere full of strangers ----------
+   The app schedules the meeting and then abandons you at the door. A table
+   needs three things on the night: an exact spot, something to recognise each
+   other by, and a way to say "I'm here" without messaging six strangers. */
+var TABLE_WORDS=["CHESTNUT","LANTERN","OTTER","MARMALADE","COMPASS","THISTLE",
+  "PELICAN","DOMINO","JUNIPER","HARBOUR","MAGPIE","SATSUMA","BRACKEN","KESTREL"];
+function tableWord(actId,ti){
+  return TABLE_WORDS[Math.abs(hash(actId+"|"+ti))%TABLE_WORDS.length];
+}
+function meetAt(a){ return a.meetAt||a.venue; }
+var ARRIVE_EARLY_MIN=20;
+function isArrivalTime(a){
+  var t=now();
+  return t>=ts(a)-ARRIVE_EARLY_MIN*60e3 && t<endsAt(a) && !isCancelled(a);
+}
+function arrivedAt(actId){
+  return myTable(actId).filter(function(p){return p.arrived;});
+}
+function iAmHere(actId){
+  var s=mySeat(actId); return !!(s&&s.arrived);
+}
+async function markArrived(a){
+  var s=mySeat(a.id); if(!s)return;
+  try{
+    await seatDoc(a.id,s.seatNo).update({arrived:true,arrivedAt:Date.now()});
+    var ti=myTableIndex(a.id);
+    await postMessage(a.id,{id:"here-"+state.me.id+"-"+a.id,kind:"bot",by:"bot",name:"Lobby",
+      text:state.me.name+" is here.",at:Date.now()},ti<0?0:ti);
+    ding();
+    render();
+  }catch(e){toast(dbFail(e),true);}
+}
+/* the block that answers "I am outside, now what" */
+function arrivalBlock(a){
+  var ti=myTableIndex(a.id); if(ti<0)return null;
+  var mine=myTable(a.id), host=hostOf(a.id,ti);
+  var here=arrivedAt(a.id), amHost=host&&state.me&&host.studentId===state.me.id;
+  var box=el("div","arrive");
+  box.appendChild(el("div","k","Tonight"));
+  box.appendChild(el("div","spot",meetAt(a)));
+  var word=el("div","word");
+  word.appendChild(el("span","wl","Ask for"));
+  word.appendChild(el("span","wv",tableWord(a.id,ti)));
+  box.appendChild(word);
+  box.appendChild(el("p","hint", seatingFor(a.id).length>1
+    ? "Two tables are running tonight, so the word is how you find the right one."
+    : "It's on the booking, and it's what to say if you can't see anyone."));
+
+  if(!iAmHere(a.id)){
+    var b=el("button","btn","I'm here"); b.type="button";
+    b.addEventListener("click",function(){markArrived(a);});
+    box.appendChild(b);
+    var others=here.filter(function(x){return !state.me||x.studentId!==state.me.id;});
+    box.appendChild(el("p","hint", others.length
+      ? others.map(function(x){return x.name;}).join(", ")+(others.length===1?" is":" are")+" already there."
+      : (amHost ? "Nobody has tapped it yet. You're hosting — grab a table and tap this, and everyone else will come to you."
+                : "Nobody has tapped it yet. If you're first, grab a table and tap it — the others will find you.")));
+  } else {
+    var ok=el("div","note");
+    ok.innerHTML = here.length>=mine.length
+      ? "<b>Everyone's here.</b> That's the whole table."
+      : "<b>You're checked in.</b> "+here.length+" of "+mine.length+" here so far — the rest can see where you are.";
+    box.appendChild(ok);
+    if(here.length<mine.length){
+      var n=el("button","btn ghost","Say where you're sitting"); n.type="button";
+      n.addEventListener("click",function(){ closeSheet(); openWhereSheet(a); });
+      box.appendChild(n);
+    }
+  }
+  return box;
+}
+function openWhereSheet(a){
+  openSheet(function(sh){
+    sheetHead(sh,"Where are you sitting?","Goes straight to the table chat. Short is fine — \"big table by the window\".");
+    var f=el("div","field");
+    var i=el("input"); i.type="text"; i.placeholder="Big table under the TV";
+    f.appendChild(i); sh.appendChild(f);
+    var go=el("button","btn","Send it"); go.type="button";
+    go.addEventListener("click",async function(){
+      var t=i.value.trim(); if(!t){toast("Write something first.",true);return;}
+      closeSheet();
+      await postMessage(a.id,{id:uid("m"),kind:"human",by:state.me.id,name:state.me.name,
+        text:t.slice(0,200),at:Date.now()});
+    });
+    sh.appendChild(go);
+  });
 }
 
 /* ---------- table figure ---------- */
@@ -686,10 +1116,7 @@ function figFor(a,size,animate){
 }
 
 /* ============================================================ writes */
-async function claimSeat(a){
-  if(!state.me){openJoinSheet(a);return;}
-  if(mySeat(a.id)){toast("You already have a seat here.");return;}
-  if(takenSeats(a.id).length>=capOf(a)){toast("That filled up while you were looking.",true);return;}
+async function takeSeat(a){
   for(var n=1;n<=capOf(a);n++){
     var ref=seatDoc(a.id,n);
     try{
@@ -697,19 +1124,75 @@ async function claimSeat(a){
       if(!lease.acquired)continue;
       var snap=await ref.get();
       var body=snap.exists?snap.data():null;
-      if(body&&body.studentId)continue;
+      if(body&&body.studentId&&!body.released)continue;
       await ref.set({seatNo:n,studentId:state.me.id,name:state.me.name,claimedAt:Date.now(),confirmed:false,paid:PRICE});
-      ding("big");
-      celebrateClaim(a,n);
-      return;
-    }catch(e){toast(dbFail(e),true);return;}
+      return n;
+    }catch(e){toast(dbFail(e),true);return null;}
   }
-  toast("Every seat is taken.",true);
+  return null;
+}
+async function claimSeat(a){
+  if(!state.me){openJoinSheet(a);return;}
+  if(mySeat(a.id)){toast("You already have a seat here.");return;}
+  if(seatsFree(a)<=0){toast("That filled up while you were looking.",true);render();return;}
+  var n=await takeSeat(a);
+  if(n==null){toast("Every seat is taken.",true);render();return;}
+  ding("big"); celebrateClaim(a,n);
+}
+async function joinWaitlist(a){
+  if(!state.me){openJoinSheet(a);return;}
+  try{
+    await waitDoc(a.id,state.me.id).set({studentId:state.me.id,name:state.me.name,joinedAt:Date.now()});
+    toast("On the list. If a seat frees up before the window closes, it's yours automatically.");
+    render();
+  }catch(e){toast(dbFail(e),true);}
+}
+async function leaveWaitlist(a){
+  if(!state.me)return;
+  try{ await waitDoc(a.id,state.me.id)["delete"](); toast("Off the list."); render(); }
+  catch(e){toast(dbFail(e),true);}
+}
+var promoteBusy={};
+async function maybePromote(a){
+  if(!state.me||promoteBusy[a.id])return;
+  var ph=phaseOf(a);
+  if(ph!=="open"&&ph!=="confirming")return;
+  if(mySeat(a.id)||myWaitPos(a.id)!==1)return;     // only the head of the queue claims
+  if(seatsFree(a)<=0)return;
+  promoteBusy[a.id]=true;
+  try{
+    var n=await takeSeat(a);
+    if(n==null)return;
+    await waitDoc(a.id,state.me.id)["delete"]();
+    ding("big");
+    showCelebrate(function(c){
+      celebrateBase(c,a,"A seat opened up",
+        "You were first on the list for "+a.title+", so it's yours — seat "+n+", $5 charged. "+
+        (confirmOpensAt(a)-now()>0 ? "We'll nudge you to confirm nearer the time." : "Confirm it now to keep it."),
+        [{label:"Good",fn:function(){closeCelebrate();switchTab("week");}}]);
+    });
+  }finally{ promoteBusy[a.id]=false; }
+}
+/* an unconfirmed seat genuinely goes back at window close, rather than just being told it did */
+var reapBusy={};
+async function reapUnconfirmed(a){
+  if(reapBusy[a.id])return;
+  var ph=phaseOf(a);
+  if(ph==="open"||ph==="confirming")return;
+  var stale=seatsOf(a.id).filter(function(x){return x.studentId&&!x.released&&!x.confirmed;});
+  if(!stale.length)return;
+  reapBusy[a.id]=true;
+  try{
+    for(var i=0;i<stale.length;i++){
+      try{ await seatDoc(a.id,stale[i].seatNo).update({released:true,releasedAt:Date.now()}); }
+      catch(e){ break; }
+    }
+  }finally{ reapBusy[a.id]=false; }
 }
 async function leaveSeat(a){
   var s=mySeat(a.id); if(!s)return;
-  if(!confirm("Give up your seat at "+a.title+"?\n\nIt goes back to the slate straight away. The $5 only comes back if the whole event cancels."))return;
-  try{ await seatDoc(a.id,s.seatNo)["delete"](); toast("Seat released."); render(); }
+  try{ await seatDoc(a.id,s.seatNo)["delete"]();
+    toast("Seat released — it goes to whoever is first on the waitlist."); render(); }
   catch(e){toast(dbFail(e),true);}
 }
 async function confirmSeat(a){
@@ -720,7 +1203,8 @@ async function confirmSeat(a){
   }catch(e){toast(dbFail(e),true);}
 }
 async function postMessage(actId,msg,tableIdx){
-  var ref=chatDoc(actId,(tableIdx==null?myTableIndex(actId):tableIdx)+1);
+  var ti=(tableIdx==null?myTableIndex(actId):tableIdx);
+  var ref=chatDoc(actId,(ti<0?0:ti)+1);
   for(var i=0;i<4;i++){
     try{
       var lease=await ref.acquire({holder:state.me?state.me.id:"anon",ttlMs:3000});
@@ -736,24 +1220,30 @@ async function postMessage(actId,msg,tableIdx){
   toast("The chat was busy — send that again.",true); return false;
 }
 function hash(s){var h=0;for(var i=0;i<s.length;i++){h=((h<<5)-h)+s.charCodeAt(i);h|=0;}return h;}
+var botBusy={};
 async function maybePostBot(a){
-  if(!tableOpen(a))return;
-  var tb=seatingFor(a.id);
-  for(var i=0;i<tb.length;i++){
-    var log=(state.chats[a.id]||{})["t"+(i+1)]||[];
-    var host=hostOf(a.id,i); if(!host)continue;
-    var plan="bot-plan-"+a.id+"-"+i, ice="bot-ice-"+a.id+"-"+i;
-    if(!log.some(function(m){return m.id===plan;})){
-      await postMessage(a.id,{id:plan,kind:"bot",by:"bot",name:"Lobby",
-        text:a.title+", "+fmtWhen(a)+", "+a.venue+
-          (tb.length>1?" — table "+(i+1)+" of "+tb.length:"")+". "+tb[i].length+
-          " of you. "+host.name+" is hosting: they'll post when they arrive and where they're sitting.",
-        at:Date.now()},i);
-    }
-    if(!log.some(function(m){return m.id===ice;})){
-      await postMessage(a.id,{id:ice,kind:"bot",by:"bot",name:"Lobby",
-        text:ICEBREAKERS[Math.abs(hash(a.id+i))%ICEBREAKERS.length],at:Date.now()+1},i);
-    }
+  if(!tableOpen(a)||botBusy[a.id])return;
+  botBusy[a.id]=true;
+  try{ await postBotFor(a); } finally{ botBusy[a.id]=false; }
+}
+async function postBotFor(a){
+  var seat=mySeat(a.id);
+  if(!seat||!seat.confirmed)return;          // only ever opens your own table's chat
+  var i=myTableIndex(a.id); if(i<0)return;
+  var tb=seatingFor(a.id), host=hostOf(a.id,i); if(!host)return;
+  var log=(state.chats[a.id]||{})["t"+(i+1)]||[];
+  var plan="bot-plan-"+a.id+"-"+i, ice="bot-ice-"+a.id+"-"+i;
+  if(!log.some(function(m){return m.id===plan;})){
+    await postMessage(a.id,{id:plan,kind:"bot",by:"bot",name:"Lobby",
+      text:a.title+", "+fmtWhen(a)+", "+a.venue+
+        (tb.length>1?" — table "+(i+1)+" of "+tb.length:"")+". "+tb[i].length+
+        " of you. Ask for "+tableWord(a.id,i)+" when you get there. "+host.name+
+        " is hosting, so they'll tap in first and say where they're sitting.",
+      at:Date.now()},i);
+  }
+  if(!log.some(function(m){return m.id===ice;})){
+    await postMessage(a.id,{id:ice,kind:"bot",by:"bot",name:"Lobby",
+      text:ICEBREAKERS[Math.abs(hash(a.id+i))%ICEBREAKERS.length],at:Date.now()+1},i);
   }
 }
 async function saveCheckin(a,madeIt,note){
@@ -772,13 +1262,34 @@ async function saveSignal(a,friends,romantic){
     setTimeout(function(){ celebrateSignal(a); },160);
   }catch(e){toast(dbFail(e),true);}
 }
-async function blockPerson(a,seat){
-  if(!confirm("Block "+seat.name+"?\n\nThey lose their seat at this event immediately — not next week's — and are frozen out of everything upcoming. They're never told who did it."))return;
+async function reportPerson(a,seat,note){
   try{
-    await seatDoc(a.id,seat.seatNo)["delete"]();
+    await store.doc("reports/"+state.me.id+"__"+seat.studentId+"__"+a.id)
+      .set({by:state.me.id,target:seat.studentId,actId:a.id,note:note||"",at:Date.now(),status:"open"});
+    var frozen=0;
+    for(var i=0;i<state.activities.length;i++){
+      var act=state.activities[i];
+      if(phaseOf(act)==="done")continue;
+      var theirs=seatsOf(act.id).filter(function(x){return x.studentId===seat.studentId&&!x.released;});
+      for(var j=0;j<theirs.length;j++){
+        try{ await seatDoc(act.id,theirs[j].seatNo).update({released:true,releasedAt:Date.now(),frozen:true}); frozen++; }
+        catch(e){}
+      }
+    }
+    markSeatingDirty();
+    toast("Reported. A moderator sees this tonight, and they're out of "+
+      frozen+" upcoming "+(frozen===1?"event":"events")+" while it's reviewed.");
+    closeSheet(); render();
+  }catch(e){toast(dbFail(e),true);}
+}
+async function blockPerson(a,seat){
+  var multi=tableCount(confirmedSeats(a.id).length)>1;
+  try{
     await store.doc("blocks/"+state.me.id+"__"+seat.studentId)
       .set({by:state.me.id,target:seat.studentId,actId:a.id,at:Date.now()});
-    toast("Done, and it took effect on this event.");
+    if(!multi) await seatDoc(a.id,seat.seatNo)["delete"]();
+    markSeatingDirty();
+    toast(multi?"Done. You are on different tables now.":"Done, and it took effect on this event.");
     closeSheet(); render();
   }catch(e){toast(dbFail(e),true);}
 }
@@ -837,9 +1348,10 @@ function celebrateClaim(a,n){
     var opens=confirmOpensAt(a)-now();
     var next = opens>0 ? "We'll nudge you in "+fmtLeft(opens)+" to confirm. One tap then and you're locked in."
                        : "Confirm it now and you're locked in.";
-    celebrateBase(c,a,"Seat "+n+" is yours",
-      a.title+", "+fmtWhen(a)+". "+next,
-      [{label:"Got it",fn:function(){closeCelebrate();switchTab("week");}}]);
+    var acts=[{label:"Got it",fn:function(){closeCelebrate();switchTab("week");}}];
+    if(opens>0) acts.push({label:"Skip the wait — run the week",cls:"btn ghost",
+      fn:function(){closeCelebrate();switchTab("week");runTour();}});
+    celebrateBase(c,a,"Seat "+n+" is yours", a.title+", "+fmtWhen(a)+". "+next, acts);
   });
 }
 function celebrateConfirm(a){
@@ -873,12 +1385,57 @@ function celebrateSignal(a){
   });
 }
 
+function overlapLines(ids){
+  var o=groupOverlap(ids), out=[];
+  if(o.servers.length) out.push({k:"Same Discord",v:o.servers.slice(0,2).map(function(x){return x.v;}).join(", ")});
+  if(o.likes.length)   out.push({k:"Both into",v:o.likes.slice(0,4).map(function(x){return x.v;}).join(", ")});
+  if(o.dislikes.length)out.push({k:"Equally not into",v:o.dislikes.slice(0,3).map(function(x){return x.v;}).join(", ")});
+  return out;
+}
+function showMatchReveal(mid){
+  var m=state.matches.filter(function(x){return x.id===mid;})[0];
+  if(!m)return;
+  var others=(m.members||[]).filter(function(x){return x!==state.me.id;});
+  var c=$("celebrate"); c.innerHTML=""; c.hidden=false;
+  var art=el("div","art"); art.appendChild(glyph("table",96)); art.style.color="var(--green)";
+  c.appendChild(art);
+  var h=el("h2",null,"You've got a group"); h.id="celebrate-title"; c.appendChild(h);
+  c.appendChild(el("p",null, others.map(function(id){
+    return (state.students[id]||{}).name||"Someone"; }).join(", ")+" — matched on what you're actually into, not a photo."));
+  var box=el("div","overlap");
+  overlapLines(m.members).forEach(function(l){
+    var r=el("div","orow");
+    r.appendChild(el("span","ok",l.k));
+    r.appendChild(el("span","ov",l.v));
+    box.appendChild(r);
+  });
+  if(!box.children.length) box.appendChild(el("p","hint","Nothing in common on paper — which happens, and is sometimes the better night."));
+  c.appendChild(box);
+  var acts=el("div","actions");
+  var b=el("button","btn","See the plan"); b.type="button";
+  b.addEventListener("click",function(){ closeCelebrate(); switchTab("week"); });
+  acts.appendChild(b); c.appendChild(acts);
+  sparks(c);
+  b.focus();
+}
+
 /* ============================================================ render */
+var renderQueued=false;
 function render(){
-  renderStreak(); renderTabs();
+  if(renderQueued)return;
+  renderQueued=true;
+  setTimeout(function(){ renderQueued=false; renderNow(); },0);
+}
+function renderNow(){
+  renderSignIn(); renderStreak(); renderTabs();
   if(state.tab==="slate")renderSlate();
   if(state.tab==="week")renderWeek();
   if(state.tab==="you")renderYou();
+}
+function renderSignIn(){
+  var b=$("signin");
+  b.hidden=!!state.me;
+  b.onclick=function(){ openSignIn(null); };
 }
 function renderStreak(){
   var s=stats(), b=$("streak");
@@ -909,8 +1466,12 @@ function urgentItem(){
     if(ph==="confirming"&&s&&!s.confirmed)
       best=best||{a:a,kind:"confirm",k:"Needs you now",t:"Confirm your seat — "+a.title,
         d:"Window closes in "+fmtLeft(confirmClosesAt(a)-now())+". Miss it and the seat goes back.",urgent:true};
-    else if(ph==="running"&&s&&s.confirmed)
-      best=best||{a:a,kind:"table",k:"Happening now",t:a.title,d:a.venue+" — open the table",urgent:false};
+    else if(isArrivalTime(a)&&s&&s.confirmed)
+      best=best||{a:a,kind:"table",k:iAmHere(a.id)?"You're there":"Starting now",
+        t:iAmHere(a.id)?a.title:"Tap when you get there",
+        d:iAmHere(a.id)?(arrivedAt(a.id).length+" of "+myTable(a.id).length+" at the table")
+                       :meetAt(a)+" — ask for "+tableWord(a.id,Math.max(0,myTableIndex(a.id))),
+        urgent:!iAmHere(a.id)};
     else if(ph==="done"&&s&&s.confirmed&&!myCheckin(a))
       best=best||{a:a,kind:"checkin",k:"One question",t:"Did you make it to "+a.title+"?",
         d:"Takes a second, and anything you flag reaches a moderator tonight.",urgent:false};
@@ -943,31 +1504,73 @@ function makeEmpty(h,p){
   var d=el("div","empty"); d.appendChild(el("h4",null,h)); d.appendChild(el("p",null,p)); return d;
 }
 function progressBar(a){
-  var conf=confirmedSeats(a.id).length, taken=takenSeats(a.id).length;
+  var conf=confirmedSeats(a.id).length, taken=takenSeats(a.id).length, cap0=capOf(a);
   var booked=a.kind==="booked";
-  var cur=booked?conf:taken, max=booked?FLOOR:capOf(a);
   var box=el("div","prog");
-  var track=el("div","track"), fill=el("div","fill"+(booked&&conf<FLOOR?" gold":""));
-  fill.style.width=Math.min(100,(cur/max)*100)+"%";
-  track.appendChild(fill); box.appendChild(track);
-  var cap=el("div","cap");
-  var left=el("span");
+  var track=el("div","track");
+  /* seats claimed sit behind seats actually confirmed, so you can see the gap */
+  var soft=el("div","fill soft"); soft.style.width=Math.min(100,(taken/cap0)*100)+"%";
+  track.appendChild(soft);
+  var firm=el("div","fill"+(booked&&conf<FLOOR?" gold":""));
+  firm.style.width=Math.min(100,((booked?conf:taken)/cap0)*100)+"%";
+  track.appendChild(firm);
   if(booked){
-    left.innerHTML = conf>=FLOOR ? "<b>Going ahead</b> — "+conf+" confirmed"
-      : "<b>"+(FLOOR-conf)+" more</b> to confirm or it cancels";
-  } else {
-    left.innerHTML = "<b>"+taken+" of "+capOf(a)+"</b> seats taken";
+    var notch=el("div","notch"); notch.style.left=((FLOOR/cap0)*100)+"%";
+    notch.title="needs "+FLOOR+" confirmed"; track.appendChild(notch);
   }
-  cap.appendChild(left);
+  box.appendChild(track);
+  var capr=el("div","cap"), left=el("span");
+  if(booked){
+    left.innerHTML = conf>=FLOOR
+      ? "<b>Going ahead</b> — "+conf+" confirmed"
+      : "<b>"+taken+" seated</b> · needs "+FLOOR+" confirmed";
+  } else {
+    left.innerHTML = "<b>"+taken+" of "+cap0+"</b> seats taken";
+  }
+  capr.appendChild(left);
   var tc=tableCount(Math.max(conf,taken));
-  cap.appendChild(el("span",null,(tc>1?tc+" tables · ":"")+(booked?"booked":"drop-in")));
-  box.appendChild(cap);
+  capr.appendChild(el("span",null,(tc>1?tc+" tables · ":"")+(booked?"booked":"drop-in")));
+  box.appendChild(capr);
   return box;
 }
 
 /* ---------- slate ---------- */
+function renderMatchCard(){
+  var slot=$("match-slot"); slot.innerHTML="";
+  var m=myMatch();
+  if(m){
+    var c=el("button","matchcard have"); c.type="button";
+    c.appendChild(el("div","k","Your group"));
+    c.appendChild(el("div","t",(m.members||[]).filter(function(x){return x!==state.me.id;})
+      .map(function(id){return (state.students[id]||{}).name||"Someone";}).join(", ")));
+    var agreed=(m.agreed||[]).length, need=(m.members||[]).length;
+    c.appendChild(el("div","d", agreed>=need ? "Everyone's agreed — "+m.proposal.when
+      : agreed+" of "+need+" have agreed to "+m.proposal.when));
+    c.addEventListener("click",function(){switchTab("week");});
+    slot.appendChild(c); return;
+  }
+  if(inPool()){
+    var w=el("div","matchcard waiting");
+    w.appendChild(el("div","k","Looking"));
+    var others=state.pool.filter(function(x){return x.studentId!==state.me.id;}).length;
+    w.appendChild(el("div","t", others? others+" other"+(others===1?"":"s")+" looking right now"
+                                     : "Nobody else is looking yet"));
+    w.appendChild(el("div","d","You'll be matched as soon as "+(MATCH_SIZE-1)+" others are in. Nothing to watch — we'll tell you."));
+    slot.appendChild(w);
+    var lv=el("button","linkish","Stop looking"); lv.type="button";
+    lv.addEventListener("click",leavePool); slot.appendChild(lv);
+    return;
+  }
+  var b=el("button","matchcard go"); b.type="button";
+  b.appendChild(el("div","k","Right now"));
+  b.appendChild(el("div","t","Find me people"));
+  b.appendChild(el("div","d","Matched on your Discord servers and what you're into. You pick the time between you."));
+  b.addEventListener("click",findPeople);
+  slot.appendChild(b);
+}
 function renderSlate(){
   renderUrgent();
+  renderMatchCard();
   var list=$("slate-list"); list.innerHTML="";
   if(state.mode==="local"){
     var n=el("div","note warn");
@@ -994,7 +1597,16 @@ function renderSlate(){
   }
   $("slate-sub").textContent = vis.length+" "+(vis.length===1?"thing":"things") +
     " on. Six seats each, $5, and it runs whether or not you know anyone.";
-  vis.forEach(function(a){ list.appendChild(activityCard(a)); });
+  var lastDay="";
+  vis.forEach(function(a){
+    var d=new Date(a.startsAt), key=d.toDateString();
+    if(key!==lastDay){
+      lastDay=key;
+      list.appendChild(el("div","dayhead",
+        d.toLocaleDateString(undefined,{weekday:"long",day:"numeric",month:"short"})));
+    }
+    list.appendChild(activityCard(a));
+  });
 }
 function activityCard(a){
   var card=el("div","card act");
@@ -1010,7 +1622,7 @@ function activityCard(a){
   (a.attrs||[]).forEach(function(t){ if(map[t])chips.appendChild(el("span","chip "+map[t][1],map[t][0])); });
   txt.appendChild(chips);
   row.appendChild(txt);
-  var fig=el("div","fig"); fig.appendChild(figFor(a,100,true)); row.appendChild(fig);
+  var fig=el("div","fig"); fig.appendChild(artTile(a,29)); row.appendChild(fig);
   card.appendChild(row);
 
   var foot=el("div","foot");
@@ -1020,6 +1632,22 @@ function activityCard(a){
     var b1=el("button","btn ghost sm","You're in — see details"); b1.type="button";
     b1.addEventListener("click",function(){openActivitySheet(a);});
     foot.appendChild(b1);
+  } else if(full&&(ph==="open"||ph==="confirming")){
+    var pos=myWaitPos(a.id);
+    if(pos){
+      var w1=el("div","note warn");
+      w1.innerHTML="<b>"+ordinal(pos)+" on the waitlist.</b> If a seat frees up before the window closes it becomes yours automatically.";
+      foot.appendChild(w1);
+      var w2=el("button","linkish","Leave the waitlist"); w2.type="button";
+      w2.addEventListener("click",function(){leaveWaitlist(a);});
+      foot.appendChild(w2);
+    } else {
+      var w3=el("button","btn ghost sm","Full — join the waitlist"); w3.type="button";
+      w3.addEventListener("click",function(){joinWaitlist(a);});
+      foot.appendChild(w3);
+      var q=waitQueue(a.id).length;
+      if(q){ var w4=el("p","foot",q+" already waiting."); foot.appendChild(w4); }
+    }
   } else if(full){
     var b2=el("button","btn ghost sm","Full — see details"); b2.type="button";
     b2.addEventListener("click",function(){openActivitySheet(a);});
@@ -1056,6 +1684,8 @@ function renderWeek(){
     pr.style.marginTop="9px"; sBox.appendChild(pr);
   }
 
+  var m=myMatch(); if(m) sBox.appendChild(matchPanel(m));
+  var met=renderMet(); if(met) sBox.appendChild(met);
   var mine=myActivities().slice().sort(function(x,y){
     var r=weekRank(x)-weekRank(y); return r!==0?r:ts(x)-ts(y);
   });
@@ -1065,9 +1695,73 @@ function renderWeek(){
   }
   mine.forEach(function(a){ list.appendChild(weekCard(a)); });
 }
+function matchPanel(m){
+  var box=el("div","card pad stackv");
+  var others=(m.members||[]).filter(function(x){return x!==state.me.id;});
+  var h=el("h3",null,"Your group"); h.style.cssText="font-size:20px;font-weight:600"; box.appendChild(h);
+  var roster=el("div","roster");
+  others.forEach(function(id){
+    var st=state.students[id]||{}, row=el("div","person");
+    row.appendChild(el("div","avatar",initials(st.name||"?")));
+    var b=el("div");
+    b.appendChild(el("div","nm",st.name||"Someone"));
+    var ov=overlapWith(state.me.id,id);
+    var bits=[];
+    if(ov.servers.length)bits.push(ov.servers[0]);
+    if(ov.likes.length)bits.push(ov.likes.slice(0,2).join(", "));
+    b.appendChild(el("div","rl",bits.length?bits.join(" · "):"no obvious overlap"));
+    row.appendChild(b); roster.appendChild(row);
+  });
+  box.appendChild(roster);
+
+  var agreed=(m.agreed||[]), need=(m.members||[]).length;
+  var plan=el("div","plan");
+  plan.appendChild(el("div","k","The plan"));
+  plan.appendChild(el("div","pw",m.proposal.what));
+  plan.appendChild(el("div","pm",m.proposal.when+" · "+m.proposal.where));
+  plan.appendChild(el("p","hint", agreed.length>=need
+    ? "Everyone's agreed. That's it — turn up."
+    : agreed.length+" of "+need+" agreed. It isn't on until everyone has."));
+  box.appendChild(plan);
+
+  if(agreed.indexOf(state.me.id)<0){
+    var ag=el("button","btn","Works for me"); ag.type="button";
+    ag.addEventListener("click",function(){agreePlan(m);}); box.appendChild(ag);
+  }
+  var ch=el("button","btn ghost sm",agreed.indexOf(state.me.id)<0?"Suggest something else":"Change the plan");
+  ch.type="button"; ch.addEventListener("click",function(){openPlanSheet(m);}); box.appendChild(ch);
+  var lv=el("button","linkish","Leave this group"); lv.type="button";
+  lv.addEventListener("click",function(){
+    askSheet({title:"Leave the group?",body:"They'll be told the group got smaller, not who left. You can look again straight away.",
+      confirmLabel:"Leave",danger:true,onConfirm:function(){leaveMatch(m);}});
+  });
+  box.appendChild(lv);
+  return box;
+}
+function openPlanSheet(m){
+  openSheet(function(sh){
+    sheetHead(sh,"Suggest a plan","Changing it resets everyone's agreement — which is the point, nobody gets moved without saying yes.");
+    var f1=el("div","field"); f1.appendChild(el("label",null,"What"));
+    var i1=el("input"); i1.type="text"; i1.value=m.proposal.what; f1.appendChild(i1); sh.appendChild(f1);
+    var f2=el("div","field"); f2.appendChild(el("label",null,"When"));
+    var i2=el("input"); i2.type="text"; i2.value=m.proposal.when;
+    f2.appendChild(i2); f2.appendChild(el("div","hint","Plain words are fine — \"Thursday about 7\".")); sh.appendChild(f2);
+    var f3=el("div","field"); f3.appendChild(el("label",null,"Where"));
+    var i3=el("input"); i3.type="text"; i3.value=m.proposal.where;
+    f3.appendChild(i3); f3.appendChild(el("div","hint","Somewhere public, and specific enough to find.")); sh.appendChild(f3);
+    var go=el("button","btn","Send it to the group"); go.type="button";
+    go.addEventListener("click",function(){
+      if(!i1.value.trim()||!i2.value.trim()||!i3.value.trim()){toast("Fill all three.",true);return;}
+      closeSheet(); proposeTime(m,i1.value.trim(),i3.value.trim(),i2.value.trim());
+    });
+    sh.appendChild(go);
+  });
+}
 function weekRank(a){
   var ph=phaseOf(a), s=mySeat(a.id);
   if(isCancelled(a))return 6;
+  if(!s&&myLostSeat(a.id))return 6;
+  if(!s&&myWaitPos(a.id))return 4;
   if(ph==="confirming"&&s&&!s.confirmed)return 0;
   if(ph==="done"&&s&&s.confirmed&&!myCheckin(a))return 1;
   if(ph==="done"&&s&&s.confirmed&&myCheckin(a)&&myCheckin(a).madeIt&&!mySignal(a))return 1;
@@ -1075,6 +1769,54 @@ function weekRank(a){
   if(ph==="locked")return 3;
   if(ph==="open"||ph==="confirming")return 4;
   return 5;
+}
+function peopleMet(){
+  if(!state.me)return [];
+  var out={};
+  state.activities.forEach(function(a){
+    var ci=myCheckin(a); if(!(ci&&ci.madeIt))return;
+    var sigs=state.signals[a.id]||{}, mine=sigs[state.me.id];
+    myTable(a.id).forEach(function(p){
+      if(p.studentId===state.me.id)return;
+      var th=sigs[p.studentId];
+      var mutual=!!(mine&&th&&(mine.friends||[]).indexOf(p.studentId)>=0
+        &&(th.friends||[]).indexOf(state.me.id)>=0);
+      var cur=out[p.studentId];
+      if(!cur){ out[p.studentId]={id:p.studentId,name:p.name,act:a,at:ts(a),mutual:mutual,times:1}; }
+      else{
+        cur.times++;
+        if(mutual)cur.mutual=true;
+        if(ts(a)>cur.at){cur.at=ts(a);cur.act=a;}
+      }
+    });
+  });
+  return Object.keys(out).map(function(k){return out[k];})
+    .sort(function(x,y){return y.at-x.at;});
+}
+function renderMet(){
+  var list=peopleMet();
+  if(!list.length)return null;
+  var box=el("div","stackv");
+  var h=el("div","sectionlabel","People you've met"); box.appendChild(h);
+  var card=el("div","card pad");
+  var roster=el("div","roster");
+  list.slice(0,12).forEach(function(m){
+    var row=el("button","person"); row.type="button";
+    row.appendChild(el("div","avatar",initials(m.name)));
+    var b=el("div");
+    b.appendChild(el("div","nm",m.name));
+    b.appendChild(el("div","rl", m.times>1 ? m.times+" times · last at "+m.act.title
+                                          : "at "+m.act.title));
+    row.appendChild(b);
+    if(m.mutual){
+      var t=el("div","end"); t.appendChild(el("span","chip ok","mutual")); row.appendChild(t);
+    }
+    row.addEventListener("click",function(){ openTableSheet(m.act); });
+    roster.appendChild(row);
+  });
+  card.appendChild(roster); box.appendChild(card);
+  box.appendChild(el("p","foot","Tap anyone to reopen the table you met at — the chat never closes."));
+  return box;
 }
 function weekCard(a){
   var card=el("div","card pad stackv");
@@ -1088,6 +1830,27 @@ function weekCard(a){
   card.appendChild(row);
 
   var ph=phaseOf(a), s=mySeat(a.id);
+  var wpos=myWaitPos(a.id), lost=myLostSeat(a.id);
+  if(!s&&wpos){
+    var wn=el("div","note warn");
+    wn.innerHTML="<b>"+ordinal(wpos)+" on the waitlist.</b> "+
+      (ph==="open"||ph==="confirming"
+        ? "A seat reaches you the moment somebody gives one up, or when the window closes on anyone who didn't confirm."
+        : "Too late for this one — the window has closed.");
+    card.appendChild(wn);
+    var wl=el("button","linkish","Leave the waitlist"); wl.type="button";
+    wl.addEventListener("click",function(){leaveWaitlist(a);});
+    card.appendChild(wl);
+    return card;
+  }
+  if(!s&&lost){
+    var ln=el("div","note bad");
+    ln.innerHTML=lost.frozen
+      ? "<b>Your seat was withdrawn while a report is reviewed.</b> You'll hear from a moderator."
+      : "<b>You didn't confirm, so the seat went back.</b> It went to the waitlist and the table is running without you. The $5 doesn't come back — that's what makes confirming mean something.";
+    card.appendChild(ln);
+    return card;
+  }
   if(isCancelled(a)){
     var n=el("div","note bad");
     n.innerHTML="<b>Cancelled — refunded.</b> Only "+confirmedSeats(a.id).length+" confirmed and it needed "+FLOOR+
@@ -1101,7 +1864,11 @@ function weekCard(a){
     st.appendChild(el("span","chip gold","Confirm opens in "+fmtLeft(confirmOpensAt(a)-now())));
     card.appendChild(st);
     var lv=el("button","linkish","Give up my seat"); lv.type="button";
-    lv.addEventListener("click",function(){leaveSeat(a);}); card.appendChild(lv);
+    lv.addEventListener("click",function(){
+      askSheet({title:"Give up your seat?",
+        body:"It goes straight back to the slate, and to whoever is first on the waitlist. The $5 only comes back if the whole event cancels.",
+        confirmLabel:"Give it up",danger:true,onConfirm:function(){leaveSeat(a);}});
+    }); card.appendChild(lv);
   } else if(ph==="confirming"){
     if(s&&s.confirmed){
       var ok=el("div","note"); ok.innerHTML="<b>You're confirmed.</b> The chat opens when the window closes.";
@@ -1125,8 +1892,19 @@ function weekCard(a){
       hn.innerHTML="<b>You're hosting.</b> Post when you arrive and where you're sitting. Your seat was free.";
       card.appendChild(hn);
     }
-    var ob=el("button","btn",ph==="running"?"Open the table — on now":"Open the table"); ob.type="button";
-    ob.addEventListener("click",function(){openTableSheet(a);}); card.appendChild(ob);
+    if(isArrivalTime(a)){
+      var an=el("div","note"+(iAmHere(a.id)?"":" warn"));
+      an.innerHTML=iAmHere(a.id)
+        ? "<b>You're checked in.</b> "+arrivedAt(a.id).length+" of "+myTable(a.id).length+" at the table."
+        : "<b>"+meetAt(a)+".</b> Ask for <b>"+tableWord(a.id,Math.max(0,myTableIndex(a.id)))+"</b>.";
+      card.appendChild(an);
+    }
+    var ob=el("button","btn",isArrivalTime(a)?(iAmHere(a.id)?"Open the table":"I'm here"):"Open the table");
+    ob.type="button";
+    ob.addEventListener("click",function(){
+      if(isArrivalTime(a)&&!iAmHere(a.id)) markArrived(a); else openTableSheet(a);
+    });
+    card.appendChild(ob);
   } else if(ph==="done"){
     if(s&&!s.confirmed){ card.appendChild(makeEmpty("You didn't confirm this one","No signal to give — you weren't at the table.")); return card; }
     var ci=myCheckin(a);
@@ -1147,6 +1925,9 @@ function weekCard(a){
 function resultPanel(a){
   var box=el("div","stackv");
   var sigs=state.signals[a.id]||{}, mine=sigs[state.me.id];
+  var ci=myCheckin(a);
+  if(ci&&!ci.madeIt){ box.appendChild(makeEmpty("You didn't make it to this one",
+    "Nothing to answer, then. The $5 stays gone — that is what makes the confirm mean anything.")); return box; }
   if(!mine){ box.appendChild(makeEmpty("Nothing recorded","You skipped the signal for this one.")); return box; }
   var fm=[],rm=[];
   myTable(a.id).forEach(function(s){
@@ -1207,15 +1988,33 @@ function renderYou(){
       var gb=el("button","pickbtn",o[1]); gb.type="button";
       gb.setAttribute("aria-pressed",String(cur===o[0]));
       gb.addEventListener("click",async function(){
-        try{ await studentDoc(state.me.id).update({group:o[0]}); seatingCache={}; toast("Saved. Nobody sees this."); }
+        try{ await studentDoc(state.me.id).update({group:o[0]}); markSeatingDirty(); toast("Saved. Nobody sees this."); }
         catch(e){ toast(dbFail(e),true); }
         renderYou();
       });
       gpick.appendChild(gb);
     });
     gc.appendChild(gpick); b.appendChild(gc);
+
+    b.appendChild(chipEditor("What you're into","likes",LIKES,
+      "This is what the matching actually runs on. Pick a handful — the narrower the better."));
+    b.appendChild(chipEditor("What you'd rather not","dislikes",DISLIKES,
+      "Two people agreeing they hate karaoke is a real thing in common. It also stops you being put in front of it."));
+    b.appendChild(chipEditor("Discord servers","servers",SERVERS,
+      "Simulated here — a real build would read your server list over OAuth and never show it to anyone. A shared niche server is the strongest signal there is."));
   }
 
+  if(state.me){
+    var so=el("div","card pad");
+    var sorow=el("div","switchrow");
+    var sol=el("div");
+    sol.appendChild(el("div","lbl","Signed in"));
+    sol.appendChild(el("div","sub",state.me.email||"this device"));
+    sorow.appendChild(sol);
+    var sob=el("button","btn ghost sm auto","Sign out"); sob.type="button";
+    sob.style.marginLeft="auto"; sob.addEventListener("click",signOut);
+    sorow.appendChild(sob); so.appendChild(sorow); b.appendChild(so);
+  }
   var pref=el("div","card pad");
   var sr=el("div","switchrow");
   var lab=el("div");
@@ -1249,17 +2048,54 @@ function renderYou(){
    "The romantic signal is silent-unless-mutual in the interface, exactly as designed — but there's no server here, so storage isn't a real privacy boundary. In production that comparison happens server-side.",
    "There is no leaderboard and there never will be. Ranking students by how social they are would be cruel to the person this is built for."
   ].forEach(function(t){ ul.appendChild(el("li",null,t)); });
-  about.appendChild(ul); b.appendChild(about);
+  about.appendChild(ul);
+  var bd=el("p","foot",BUILD+" — if that isn't the build you were told about, you're on a cached copy.");
+  bd.style.marginTop="4px"; about.appendChild(bd);
+  b.appendChild(about);
 
   b.appendChild(demoPanel());
 }
 
 /* ---------- demo ---------- */
+function chipEditor(title,field,options,hint){
+  var card=el("div","card pad stackv");
+  var h=el("h3",null,title); h.style.cssText="font-size:18px;font-weight:600"; card.appendChild(h);
+  var p=el("p",null,hint); p.style.cssText="font-size:14px;color:var(--ink-2)"; card.appendChild(p);
+  var cur=(meProfile()[field]||[]).slice();
+  var wrap=el("div","chipset");
+  options.forEach(function(o){
+    var on=cur.indexOf(o)>=0;
+    var btn=el("button","tog"+(on?" on":""),o); btn.type="button";
+    btn.setAttribute("aria-pressed",String(on));
+    btn.addEventListener("click",async function(){
+      var list=(meProfile()[field]||[]).slice();
+      var i=list.indexOf(o);
+      if(i>=0)list.splice(i,1); else list.push(o);
+      var body={}; body[field]=list;
+      try{ await studentDoc(state.me.id).update(body); }
+      catch(e){ try{ var base={id:state.me.id,name:state.me.name,adult:true}; base[field]=list;
+        await studentDoc(state.me.id).set(base); }catch(e2){ toast(dbFail(e2),true); return; } }
+      renderYou();
+    });
+    wrap.appendChild(btn);
+  });
+  card.appendChild(wrap);
+  return card;
+}
 function demoPanel(){
   var d=el("div","demo");
   d.appendChild(el("h4",null,"Demo controls — not part of the product"));
   d.appendChild(el("p",null,"A real week takes a week. These move the shared clock and fill seats so you can walk the whole loop in a minute. Everything they touch is real state — anyone else on this link sees it too."));
   var mk=function(l,f){var b=el("button",null,l);b.type="button";b.addEventListener("click",f);return b;};
+  var pres=mk("▶  Presenter mode — walk the whole thing with a script",startShow);
+  pres.style.cssText="width:100%;padding:13px;font-size:14px;font-weight:800;background:var(--ink);color:var(--ground);border-color:var(--ink)";
+  d.appendChild(pres);
+  var rs=mk("Reset so you can run it again",resetShow);
+  rs.style.cssText="width:100%;padding:10px;font-size:12.5px";
+  d.appendChild(rs);
+  var big=mk("▸  Run the whole week (about a minute)",runTour);
+  big.style.cssText="width:100%;padding:12px;font-size:13.5px;background:var(--clay);color:var(--ground);border-color:var(--clay)";
+  d.appendChild(big);
   var r1=el("div","row");
   r1.appendChild(mk("Fill a table",fillTable));
   r1.appendChild(mk("Confirm the others",confirmOthers));
@@ -1270,8 +2106,11 @@ function demoPanel(){
   r2.appendChild(mk("→ after it ends",function(){jumpTo(function(a){return endsAt(a)+30*60e3;});}));
   r2.appendChild(mk("reset clock",function(){setClock(0);toast("Clock back to real time.");}));
   d.appendChild(r2);
+  var r25=el("div","row");
+  r25.appendChild(mk("Put people in the matching pool",seedPool));
+  r25.appendChild(mk("The others agree to the plan",agreeOthers));
+  d.appendChild(r25);
   var r3=el("div","row");
-  r3.appendChild(mk("Run the whole loop",runTour));
   r3.appendChild(mk("Become someone else",function(){
     localStorage.removeItem(LS_ME); state.me=null; state.seenSeats={};
     toast("You're a new person now."); switchTab("slate");
@@ -1279,9 +2118,40 @@ function demoPanel(){
   d.appendChild(r3);
   return d;
 }
+async function seedPool(){
+  var folk=[
+    {n:"Priya",  g:"w", l:["Valorant","anime","coffee","CS"],       d:["early mornings","loud clubs"], s:["MMU CS Year 1","Valorant EU Chill"]},
+    {n:"Marcus", g:"m", l:["Smash Bros","metal","gym","CS"],        d:["small talk","camping"],        s:["MMU CS Year 1"]},
+    {n:"Dani",   g:"n", l:["A24 films","indie music","photography"],d:["crowds","karaoke"],            s:["Anime Club"]},
+    {n:"Yusuf",  g:"m", l:["Valorant","climbing","coffee"],         d:["early mornings","spicy food"], s:["Valorant EU Chill","Campus Climbing"]},
+    {n:"Lena",   g:"w", l:["K-drama","cooking","anime"],            d:["horror films","crowds"],       s:["Anime Club","Study Grind 24/7"]},
+    {n:"Theo",   g:"m", l:["board games","D&D","chess"],            d:["loud clubs","running"],        s:["Study Grind 24/7"]}
+  ];
+  for(var i=0;i<folk.length;i++){
+    var f=folk[i], id="pool_"+f.n.toLowerCase();
+    try{
+      await studentDoc(id).set({id:id,name:f.n,group:f.g,likes:f.l,dislikes:f.d,servers:f.s,
+        intent:i%2?"open":"friends",adult:true,demo:true,joinedAt:Date.now()});
+      await poolDoc(id).set({studentId:id,name:f.n,at:Date.now()-(6-i)*60e3});
+    }catch(e){ toast(dbFail(e),true); return; }
+  }
+  toast("Six people are looking. Tap Find me people.");
+  switchTab("slate");
+}
+async function agreeOthers(){
+  var m=myMatch();
+  if(!m){toast("No group open.",true);return;}
+  var a=(m.agreed||[]).slice();
+  (m.members||[]).forEach(function(id){ if(a.indexOf(id)<0)a.push(id); });
+  try{ await matchDoc(m.id).update({agreed:a}); ding("big");
+    toast("Everyone's in. That's a plan."); render(); }
+  catch(e){ toast(dbFail(e),true); }
+}
 function nextActivity(){
-  var m=myActivities(); if(m.length)return m[0];
-  return state.activities.slice().sort(function(x,y){return ts(x)-ts(y);})[0];
+  var live=function(a){return phaseOf(a)!=="done"&&!isCancelled(a);};
+  var m=myActivities().filter(live); if(m.length)return m[0];
+  var all=state.activities.slice().sort(function(x,y){return ts(x)-ts(y);});
+  return all.filter(live)[0]||all[0];
 }
 async function fillTable(){
   var a=nextActivity(); if(!a){toast("No activities to fill.",true);return;}
@@ -1298,7 +2168,8 @@ async function fillTable(){
         var sn=await ref.get();
         if(sn.exists&&sn.data().studentId)continue;
         await ref.set({seatNo:n,studentId:sid,name:nm,claimedAt:Date.now(),confirmed:false,paid:PRICE,demo:true});
-        await studentDoc(sid).set({id:sid,name:nm,intent:Math.random()<0.5?"open":"friends",adult:true,demo:true,joinedAt:Date.now()});
+        await studentDoc(sid).set({id:sid,name:nm,intent:Math.random()<0.5?"open":"friends",
+          group:["w","m","n"][Math.floor(Math.random()*3)],adult:true,demo:true,joinedAt:Date.now()});
         break;
       }catch(e){toast(dbFail(e),true);return;}
     }
@@ -1375,6 +2246,38 @@ function sheetHead(s,title,sub){
   s.appendChild(h);
 }
 
+function askSheet(o){
+  openSheet(function(s){
+    sheetHead(s,o.title,o.body);
+    var go=el("button","btn"+(o.danger?" clay":""),o.confirmLabel); go.type="button";
+    go.addEventListener("click",function(){closeSheet();o.onConfirm();});
+    s.appendChild(go);
+    var no=el("button","linkish","Never mind"); no.type="button";
+    no.addEventListener("click",closeSheet); s.appendChild(no);
+  });
+}
+function openPersonSheet(a,seat){
+  openSheet(function(s){
+    sheetHead(s,seat.name,"Neither of these ever tells them who did it.");
+    var f=el("div","field");
+    f.appendChild(el("label",null,"What happened? (optional)"));
+    var note=el("input"); note.type="text"; note.placeholder="A moderator reads this tonight";
+    f.appendChild(note); s.appendChild(f);
+    var r=el("button","btn clay","Report to a moderator"); r.type="button";
+    r.addEventListener("click",function(){ reportPerson(a,seat,note.value); });
+    s.appendChild(r);
+    var rp=el("p","foot","They lose their seat at everything upcoming while it's reviewed — including anything in the next couple of days, which is the window that matters.");
+    s.appendChild(rp);
+    var multi=tableCount(confirmedSeats(a.id).length)>1;
+    var b=el("button","btn ghost","Block — never seated together"); b.type="button";
+    b.addEventListener("click",function(){ blockPerson(a,seat); });
+    s.appendChild(b);
+    var bp=el("p","foot",multi
+      ? "They keep their seat at this event but move to another table, and you are never put together again."
+      : "There is only one table here, so blocking gives their seat back and refunds them.");
+    s.appendChild(bp);
+  });
+}
 function openActivitySheet(a){
   openSheet(function(s){
     sheetHead(s,a.title,fmtWhen(a)+" · "+a.venue);
@@ -1393,8 +2296,24 @@ function openActivitySheet(a){
       s.appendChild(ok);
       var g=el("button","btn ghost","See it in Your week"); g.type="button";
       g.addEventListener("click",function(){closeSheet();switchTab("week");}); s.appendChild(g);
+    } else if(full&&(ph==="open"||ph==="confirming")){
+      var pos=myWaitPos(a.id);
+      if(pos){
+        var wn=el("div","note warn");
+        wn.innerHTML="<b>"+ordinal(pos)+" on the waitlist.</b> Seats free up when somebody gives one up, and again when the confirm window closes on anyone who didn't answer.";
+        s.appendChild(wn);
+        var wl=el("button","btn ghost","Leave the waitlist"); wl.type="button";
+        wl.addEventListener("click",function(){leaveWaitlist(a);closeSheet();});
+        s.appendChild(wl);
+      } else {
+        var wb=el("button","btn","Join the waitlist"); wb.type="button";
+        wb.addEventListener("click",function(){joinWaitlist(a);closeSheet();});
+        s.appendChild(wb);
+        s.appendChild(el("p","foot","Free to wait — you're only charged if a seat actually reaches you. "+
+          waitQueue(a.id).length+" ahead of you right now."));
+      }
     } else if(full){
-      s.appendChild(makeEmpty("Full","Six is the table. Waitlists are the next thing to build."));
+      s.appendChild(makeEmpty("Full",capOf(a)+" seats and every one of them is taken, and it's too late to join."));
     } else if(ph!=="open"&&ph!=="confirming"){
       s.appendChild(makeEmpty("Too late for this one","Seats close when the confirm window does."));
     } else {
@@ -1407,6 +2326,9 @@ function openActivitySheet(a){
 }
 
 function openJoinSheet(a){
+  openSignIn(function(){ claimSeat(a); });
+}
+function openJoinSheetLegacy(a){
   openSheet(function(s){
     sheetHead(s,"Take the seat","Two questions and a date of birth. You only need this to sit down — browsing needs nothing.");
     var f1=el("div","field"); f1.appendChild(el("label",null,"First name"));
@@ -1478,8 +2400,9 @@ function openTableSheet(a){
     var mine=ti<0?(tb[0]||[]):tb[ti];
     sheetHead(s,tb.length>1?"Table "+(ti+1)+" of "+tb.length:"Your table",
       a.title+" · "+fmtWhen(a)+" · "+a.venue);
+    if(isArrivalTime(a)){ var ab=arrivalBlock(a); if(ab) s.appendChild(ab); }
     var why=whyThisTable(a);
-    if(why){ var wn=el("div","why"); wn.appendChild(el("div","k","Why these people"));
+    if(why&&!isArrivalTime(a)){ var wn=el("div","why"); wn.appendChild(el("div","k","Why these people"));
       wn.appendChild(el("p",null,why)); s.appendChild(wn); }
     var roster=el("div","roster");
     mine.slice().sort(function(x,y){return (x.claimedAt||0)-(y.claimedAt||0);}).forEach(function(p){
@@ -1487,13 +2410,16 @@ function openTableSheet(a){
       var isMe=state.me&&p.studentId===state.me.id;
       row.appendChild(el("div","avatar"+(isMe?" me":""),initials(p.name)));
       var box=el("div");
-      box.appendChild(el("div","nm",p.name+(isMe?" (you)":"")));
-      box.appendChild(el("div","rl",host&&host.studentId===p.studentId?"host · seat free":"also here"));
+      box.appendChild(el("div","nm",p.name+(isMe&&p.name!=="You"?" (you)":"")));
+      box.appendChild(el("div","rl",
+        p.arrived ? "here now"
+        : (host&&host.studentId===p.studentId?"host · seat free":"also here")));
+      if(p.arrived) row.classList.add("ishere");
       row.appendChild(box);
       if(!isMe&&state.me){
         var m=el("button","dots end","⋯"); m.type="button";
         m.setAttribute("aria-label","Report or block "+p.name);
-        m.addEventListener("click",function(){blockPerson(a,p);});
+        m.addEventListener("click",function(){openPersonSheet(a,p);});
         row.appendChild(m);
       }
       roster.appendChild(row);
@@ -1592,6 +2518,151 @@ function pickList(roster,bucket){
   return box;
 }
 
+/* ============================================================ signing in
+   Campus-only is a real product rule, so the address check is real. The code
+   step is not - no mail is sent and any six digits pass - and the screen says
+   so rather than pretending. The address never leaves this device: it is not
+   written to the shared database, because anyone with the link can read that. */
+function isUniEmail(e){
+  if(!/^[^@\s]+@[^@\s]+\.[a-z]{2,}$/i.test(e))return false;
+  var d=e.split("@")[1].toLowerCase();
+  if(/^(gmail|hotmail|outlook|yahoo|icloud|proton|protonmail|live|aol|mail)\./.test(d))return false;
+  return /\.edu$/.test(d)||/\.edu\.[a-z]{2,}$/.test(d)||/\.ac\.[a-z]{2,}$/.test(d);
+}
+var authState={step:0,email:"",after:null};
+function openSignIn(after){
+  authState={step:0,email:"",after:after||null};
+  $("auth").hidden=false;
+  drawAuth();
+}
+function closeSignIn(){ $("auth").hidden=true; render(); }
+function authHead(box,title,sub){
+  var h=el("h2",null,title); h.id="auth-title"; box.appendChild(h);
+  if(sub){ var p=el("p",null,sub); box.appendChild(p); }
+}
+function drawAuth(){
+  var a=$("auth"); a.innerHTML="";
+  var top=el("div","atop");
+  var brand=el("div","abrand","Lobby"); top.appendChild(brand);
+  if(authState.step>0){
+    var back=el("button","aback","‹ Back"); back.type="button";
+    back.addEventListener("click",function(){ authState.step--; drawAuth(); });
+    top.appendChild(back);
+  }
+  a.appendChild(top);
+  var body=el("div","abody"); a.appendChild(body);
+
+  if(authState.step===0){
+    authHead(body,"Meet people who are into what you're into.",
+      "Campus only. Six seats, $5 a seat, and something already happening.");
+    var f=el("div","field");
+    f.appendChild(el("label",null,"University email"));
+    var i=el("input"); i.id="auth-email"; i.type="email"; i.inputMode="email";
+    i.autocomplete="email"; i.placeholder="you@student.mmu.edu.my"; i.value=authState.email;
+    f.appendChild(i);
+    f.appendChild(el("div","hint","We check the domain, not you. A personal address won't get in — that's the whole point of a campus app."));
+    body.appendChild(f);
+    var err=el("div","note bad"); err.hidden=true; body.appendChild(err);
+    var go=el("button","btn","Continue"); go.type="button";
+    var submit=function(){
+      var v=i.value.trim();
+      if(!v){ err.textContent="Pop your university address in."; err.hidden=false; i.focus(); return; }
+      if(!isUniEmail(v)){
+        err.textContent = /^(gmail|hotmail|outlook|yahoo|icloud)\./.test((v.split("@")[1]||"").toLowerCase())
+          ? "Lobby is campus-only, so that needs to be your university address."
+          : "That doesn't look like a university address — try the one ending .edu, .edu.my or .ac.uk.";
+        err.hidden=false; i.focus(); return;
+      }
+      authState.email=v; authState.step=1; drawAuth();
+    };
+    go.addEventListener("click",submit);
+    i.addEventListener("keydown",function(e){ if(e.key==="Enter")submit(); });
+    body.appendChild(go);
+    var skip=el("button","linkish","Have a look around first"); skip.type="button";
+    skip.addEventListener("click",closeSignIn); body.appendChild(skip);
+  }
+  else if(authState.step===1){
+    authHead(body,"Check your email.","We sent a six-digit code to "+authState.email+".");
+    var pf=el("div","field");
+    pf.appendChild(el("label",null,"Code"));
+    var ci=el("input"); ci.id="auth-code"; ci.type="text"; ci.inputMode="numeric";
+    ci.maxLength=6; ci.placeholder="000000"; ci.className="codein";
+    pf.appendChild(ci); body.appendChild(pf);
+    var sim=el("div","note warn");
+    sim.innerHTML="<b>Prototype.</b> No email was actually sent and any six digits will do. A real build would send a one-time code and nothing else.";
+    body.appendChild(sim);
+    var cerr=el("div","note bad"); cerr.hidden=true; body.appendChild(cerr);
+    var go2=el("button","btn","Verify"); go2.type="button";
+    var submit2=function(){
+      if(!/^\d{6}$/.test(ci.value.trim())){
+        cerr.textContent="Six digits — any six, it's a prototype."; cerr.hidden=false; ci.focus(); return;
+      }
+      authState.step=2; drawAuth();
+    };
+    go2.addEventListener("click",submit2);
+    ci.addEventListener("keydown",function(e){ if(e.key==="Enter")submit2(); });
+    body.appendChild(go2);
+    setTimeout(function(){ ci.focus(); },60);
+  }
+  else {
+    authHead(body,"Nearly there.","Only your first name ever reaches a table.");
+    var nf=el("div","field"); nf.appendChild(el("label",null,"First name"));
+    var ni=el("input"); ni.id="auth-name"; ni.type="text"; ni.autocomplete="given-name";
+    ni.placeholder="What the table calls you"; nf.appendChild(ni); body.appendChild(nf);
+
+    var df=el("div","field"); df.appendChild(el("label",null,"Date of birth"));
+    var di=el("input"); di.id="auth-dob"; di.type="date"; df.appendChild(di);
+    df.appendChild(el("div","hint","18+ only, and that's firm — a romantic-signal feature plus minors isn't a line we get to blur."));
+    body.appendChild(df);
+
+    var inf=el("div","field"); inf.appendChild(el("label",null,"What are you here for?"));
+    var chosen={v:"friends"}; var pick=el("div","pick");
+    [["friends","Just here for friends"],["open","Open to meeting someone"],["unsure","Not sure yet"]]
+      .forEach(function(o,idx){
+        var pb=el("button","pickbtn",o[1]); pb.type="button";
+        pb.setAttribute("aria-pressed",String(idx===0));
+        pb.addEventListener("click",function(){
+          chosen.v=o[0];
+          Array.prototype.forEach.call(pick.children,function(k){k.setAttribute("aria-pressed","false");});
+          pb.setAttribute("aria-pressed","true");
+        });
+        pick.appendChild(pb);
+      });
+    inf.appendChild(pick);
+    inf.appendChild(el("div","hint","Asked once, shown to nobody, never used to decide who you sit with. Say friends and you will never be asked to rate anyone romantically."));
+    body.appendChild(inf);
+
+    var aerr=el("div","note bad"); aerr.hidden=true; body.appendChild(aerr);
+    var done=el("button","btn","Create my account"); done.type="button";
+    done.addEventListener("click",async function(){
+      var nm=ni.value.trim(), dob=di.value;
+      var bad=function(m){ aerr.textContent=m; aerr.hidden=false; };
+      if(nm.length<2){ bad("Give the table something to call you."); ni.focus(); return; }
+      if(!dob){ bad("We need a date of birth for the 18+ check."); di.focus(); return; }
+      var age=ageFrom(dob);
+      if(age===null){ bad("That date didn't parse."); return; }
+      if(age<18){ bad("Lobby is 18+ only. That's a hard line, not a setting — sorry."); return; }
+      if(age>120){ bad("That date is in the wrong century."); return; }
+      done.disabled=true; done.textContent="Setting you up…";
+      await createMe(nm,dob,chosen.v);
+      state.me.email=authState.email;          // stays on this device, never in the shared db
+      lsSet(LS_ME,state.me);
+      var after=authState.after;
+      closeSignIn();
+      if(after) after();
+    });
+    body.appendChild(done);
+  }
+  a.focus();
+}
+function signOut(){
+  askSheet({title:"Sign out?",body:"Your seats and signals stay in the shared data — this device just forgets who you were, which is how you demo it as somebody else.",
+    confirmLabel:"Sign out",danger:true,onConfirm:function(){
+      localStorage.removeItem(LS_ME); state.me=null; state.seenSeats={};
+      switchTab("slate"); toast("Signed out.");
+    }});
+}
+
 /* ============================================================ onboarding */
 var ONB=[
   {t:"Something's already happening",
@@ -1634,6 +2705,116 @@ function showOnboarding(){
   o.hidden=false; draw();
 }
 
+/* ============================================================ presenting
+   A social app demoed by one person on one screen looks like an empty room.
+   This drives the app through the whole loop with a line to say at each step,
+   so a single presenter can show what six people would normally show. */
+function showAct(){
+  var big=state.activities.filter(function(a){return capOf(a)>6&&phaseOf(a)!=="done";});
+  if(big.length)return big.sort(function(x,y){return ts(x)-ts(y);})[0];
+  return nextActivity();
+}
+async function ensureShowMe(){
+  if(state.me)return;
+  await createMe("You","2005-01-01","open");
+}
+async function showClaim(a){
+  if(mySeat(a.id))return;
+  await ensureShowMe();
+  await takeSeat(a);
+}
+async function showJump(a,fn){ await setClock(fn(a)-Date.now()); }
+
+var SHOW=[
+ {say:"This is the week. Four real things, real places, real times — you don't browse people, you pick something to do.",
+  run:async function(){ closeSheet(); await setClock(0); switchTab("slate"); }},
+ {say:"Six seats each. Nobody here knows each other yet, and that's the point — the activity carries the conversation.",
+  run:async function(){ switchTab("slate"); openActivitySheet(showAct()); }},
+ {say:"Five dollars. Not a subscription — it covers the activity, and it's the reason people actually turn up.",
+  run:async function(){ closeSheet(); await showClaim(showAct()); switchTab("week"); }},
+ {say:"A day before, one tap to confirm. Miss the window and the seat goes back to the waitlist, and the five dollars doesn't.",
+  run:async function(){ var a=showAct(); await showJump(a,function(x){return confirmOpensAt(x)+30*60e3;});
+    switchTab("week"); }},
+ {say:"That's it confirmed. Now fill the rest of the room — on a real campus these are other students claiming seats all week.",
+  run:async function(){ var a=showAct(); var s=mySeat(a.id);
+    if(s&&!s.confirmed){ try{ await seatDoc(a.id,s.seatNo).update({confirmed:true,confirmedAt:Date.now()}); }catch(e){} }
+    await fillTable(); await confirmOthers(); switchTab("slate"); }},
+ {say:function(){ var a=showAct(), n=confirmedSeats(a.id).length, t=seatingFor(a.id);
+    return n+" people chose "+a.title.toLowerCase()+", so it becomes "+
+      (t.length>1?t.length+" tables of about "+Math.round(n/t.length):"one table")+
+      ". This is the only matching in the product — and it happens after everyone already agreed on the activity."; },
+  run:async function(){ var a=showAct(); await showJump(a,function(x){return confirmClosesAt(x)+5*60e3;});
+    switchTab("week"); await sleep(500); openTableSheet(a); await sleep(900); refreshChatLog(a.id); }},
+ {say:"The bot posts first with the plan and a named host, so nobody has to be the one who speaks first. That's the single biggest reason group chats die.",
+  run:async function(){ var a=showAct(); await maybePostBot(a); await sleep(500); refreshChatLog(a.id); }},
+ {say:"Afterwards, two questions — and only one of them is about dating, only for people who said at signup that they wanted it.",
+  run:async function(){ var a=showAct(); closeSheet();
+    await showJump(a,function(x){return endsAt(x)+30*60e3;});
+    await signalOthers(a); switchTab("week"); await sleep(300);
+    await saveCheckin(a,true,""); await sleep(300); openSignalSheet(a); }},
+ {say:"Silent unless it's mutual. Nobody is ever told they weren't picked — including you, just now.",
+  run:async function(){ }},
+ {say:"And week two has a reason to exist: the people you actually met, and the table chat that never closed.",
+  run:async function(){ closeSheet(); switchTab("week"); }}
+];
+
+function renderShowBar(){
+  var old=$("showbar"); if(old)old.remove();
+  if(!state.show.on)return;
+  var bar=el("div","showbar"); bar.id="showbar";
+  var n=el("div","n",(state.show.i+1)+"/"+SHOW.length);
+  bar.appendChild(n);
+  var line=SHOW[state.show.i].say;
+  bar.appendChild(el("p","say",typeof line==="function"?line():line));
+  var nav=el("div","nav");
+  var back=el("button","sb","‹"); back.type="button"; back.setAttribute("aria-label","Previous step");
+  back.disabled=state.show.i===0||state.show.busy;
+  back.addEventListener("click",function(){ gotoStep(state.show.i-1); });
+  var next=el("button","sb primary",state.show.i===SHOW.length-1?"Done":"Next ›"); next.type="button";
+  next.disabled=state.show.busy;
+  next.addEventListener("click",function(){
+    if(state.show.i===SHOW.length-1) stopShow(); else gotoStep(state.show.i+1);
+  });
+  nav.appendChild(back); nav.appendChild(next); bar.appendChild(nav);
+  var x=el("button","sx","Exit"); x.type="button";
+  x.addEventListener("click",stopShow); bar.appendChild(x);
+  document.body.appendChild(bar);
+}
+async function gotoStep(i){
+  if(state.show.busy)return;
+  state.show.i=Math.max(0,Math.min(SHOW.length-1,i));
+  state.show.busy=true; renderShowBar();
+  try{ await SHOW[state.show.i].run(); }catch(e){ toast("That step didn't run cleanly — carry on.",true); }
+  state.show.busy=false; renderShowBar(); render();
+}
+async function startShow(){
+  state.show.on=true; state.show.i=-1;
+  document.body.classList.add("presenting");
+  await gotoStep(0);
+}
+function stopShow(){
+  state.show.on=false;
+  document.body.classList.remove("presenting");
+  renderShowBar(); render();
+}
+/* wipe only what the presenter did, so it can be run again */
+async function resetShow(){
+  if(!state.me){toast("Nothing to reset.");return;}
+  var mine=state.me.id;
+  for(var i=0;i<state.activities.length;i++){
+    var a=state.activities[i];
+    var s=seatsOf(a.id).filter(function(x){return x.studentId===mine;});
+    for(var j=0;j<s.length;j++){ try{ await seatDoc(a.id,s[j].seatNo)["delete"](); }catch(e){} }
+    try{ await signalDoc(a.id,mine)["delete"](); }catch(e){}
+    try{ await signalDoc(a.id,mine+"__checkin")["delete"](); }catch(e){}
+    try{ await waitDoc(a.id,mine)["delete"](); }catch(e){}
+  }
+  await setClock(0);
+  markSeatingDirty();
+  toast("Reset. Ready to run it again.");
+  switchTab("slate");
+}
+
 /* ============================================================ tabs */
 function switchTab(name){
   state.tab=name;
@@ -1661,17 +2842,23 @@ function subscribeAll(){
   actColl().onSnapshot(function(snap){
     state.activities=snap.docs.map(function(d){var b=d.data()||{};b.id=d.id;return b;})
       .filter(function(a){return a.startsAt&&a.title;});
+    markSeatingDirty();
     state.mode=isLocalStore?"local":"live";
     state.activities.forEach(function(a){
       if(subscribed[a.id])return;
       subscribed[a.id]=true;
       seatColl(a.id).onSnapshot(function(s){
         state.seats[a.id]=s.docs.map(function(d){return d.data();}).filter(function(x){return x&&x.seatNo;});
-        render(); maybePostBot(a);
+        markSeatingDirty();
+        render(); maybePostBot(a); reapUnconfirmed(a); maybePromote(a);
       },function(e){toast(dbFail(e),true);});
       chatColl(a.id).onSnapshot(function(cs){
         var m={}; cs.docs.forEach(function(d){ m[d.id]=(d.data()||{}).messages||[]; });
         state.chats[a.id]=m; refreshChatLog(a.id); render();
+      });
+      waitColl(a.id).onSnapshot(function(ws){
+        state.waits[a.id]=ws.docs.map(function(d){return d.data();}).filter(function(x){return x&&x.studentId;});
+        render(); maybePromote(a);
       });
       signalColl(a.id).onSnapshot(function(s){
         var m={}; s.docs.forEach(function(d){m[d.id]=d.data();});
@@ -1681,13 +2868,21 @@ function subscribeAll(){
     render();
   },function(e){toast(dbFail(e),true);state.mode=isLocalStore?"local":"live";render();});
 
+  poolColl().onSnapshot(function(ps){
+    state.pool=ps.docs.map(function(d){return d.data();}).filter(function(x){return x&&x.studentId;});
+    render(); tryFormMatch();
+  });
+  matchColl().onSnapshot(function(ms){
+    state.matches=ms.docs.map(function(d){var b=d.data()||{};b.id=d.id;return b;});
+    render();
+  });
   store.collection("blocks").onSnapshot(function(bs){
     var m={}; bs.docs.forEach(function(d){ m[d.id]=d.data(); });
-    state.blocks=m; seatingCache={}; render();
+    state.blocks=m; markSeatingDirty(); render();
   });
   store.collection("students").onSnapshot(function(ss){
     var m={}; ss.docs.forEach(function(d){ m[d.id]=d.data(); });
-    state.students=m; seatingCache={}; render();
+    state.students=m; markSeatingDirty(); render();
   });
   clockDoc().onSnapshot(function(d){
     state.clockOffset=d.exists&&typeof d.data().offsetMs==="number"?d.data().offsetMs:0;

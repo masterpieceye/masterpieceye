@@ -93,3 +93,24 @@ it explains itself. The table sheet opens with **Why these people** in plain lan
 what the shared activity was, how the roster was split, and how many at the table are
 new to you. An algorithm that quietly decides who you spend an evening with and never
 says why is the thing people rightly distrust about matching apps.
+
+## Activity marks
+
+Every activity gets a drawn mark — a buzzer for trivia, dice for board games, a pad
+for Smash, holds for climbing — in the same 1.8px round-stroke language as the tab
+icons, sitting on a green tile. It is a system, not clip art: the glyphs share a
+stroke weight, a grid and a single colour, so the slate gains identity without gaining
+a second visual idiom. They are inferred from the activity's title, so a new activity
+gets a sensible mark with no extra data.
+
+The mark replaced a six-seat table drawing on the slate card, which was actively
+misleading: it capped at six and so showed "full" for an activity with nine of twelve
+seats gone. The table drawing now appears only where seating is the subject — your
+week, the table sheet, and celebrations. The slate answers *what is this*; the bar
+beneath answers *how full is it*.
+
+## Two-tone progress
+
+A booked activity shows seats claimed as a translucent band and seats *confirmed* as
+the solid one, with a notch at the floor it has to clear. The single-value bar read as
+empty whenever nobody had confirmed yet, which is most of the week.
