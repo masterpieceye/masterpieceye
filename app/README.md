@@ -91,6 +91,14 @@ together. Reporting sends it to a moderator *and* withdraws the reported person 
 every upcoming event while it is reviewed - including anything in the next two days,
 which is the window that actually matters.
 
+## People you've met
+
+Built from tables you actually attended — derived from check-ins and seating, with no
+new writes. It counts repeats ("2 times"), marks anyone the friend signal matched you
+with, and each row reopens the table chat where you met, because §07 says that chat
+never closes. This is the retention loop made visible: the stats tiles say *three
+people*, this says *which three*.
+
 ## Not built yet
 
 Host briefing flow, a moderator's view of the report queue, and real `.edu`

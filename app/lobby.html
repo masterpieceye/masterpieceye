@@ -125,12 +125,19 @@ svg{display:block}
 .chip.bad{background:var(--red-bg);color:var(--red);border-color:transparent}
 .chip.gold{background:var(--gold-bg);color:var(--gold);border-color:transparent}
 
+/* activity mark */
+.arttile{width:52px;height:52px;border-radius:15px;display:grid;place-items:center;
+  background:var(--green-bg);color:var(--green);flex-shrink:0}
+
 /* progress */
 .prog{display:flex;flex-direction:column;gap:6px}
-.prog .track{height:9px;border-radius:99px;background:var(--card-2);border:1px solid var(--line-2);
+.prog .track{height:10px;border-radius:99px;background:var(--card-2);border:1px solid var(--line-2);
   overflow:hidden;position:relative}
-.prog .fill{height:100%;background:var(--green);border-radius:99px;transition:width .5s cubic-bezier(.2,.8,.2,1)}
+.prog .fill{position:absolute;left:0;top:0;height:100%;background:var(--green);border-radius:99px;
+  transition:width .5s cubic-bezier(.2,.8,.2,1)}
+.prog .fill.soft{background:color-mix(in srgb,var(--green) 32%,transparent)}
 .prog .fill.gold{background:var(--gold)}
+.prog .notch{position:absolute;top:0;bottom:0;width:2px;background:var(--ink-3);opacity:.45}
 .prog .cap{font-size:12.5px;color:var(--ink-2);display:flex;justify-content:space-between;gap:8px}
 .prog .cap b{color:var(--ink);font-weight:700}
 
@@ -422,6 +429,56 @@ function icon(name,size){
     var p=document.createElementNS(ns,"path"); p.setAttribute("d",d); svg.appendChild(p);
   });
   return svg;
+}
+
+/* Each activity gets a drawn mark so the slate is scannable — same 2px round
+   stroke language as the tab icons, so it reads as one system rather than clip art. */
+var GLYPHS={
+  quiz:{p:["M12 6a5 5 0 0 1 5 5H7a5 5 0 0 1 5-5Z","M4 11h16","M12 3v1.6","M8 15h8"]},
+  dice:{p:["M7 4h10a3 3 0 0 1 3 3v10a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3V7a3 3 0 0 1 3-3Z"],
+        c:[[8.5,8.5,1.15],[12,12,1.15],[15.5,15.5,1.15]]},
+  pad:{p:["M8 7h8a5 5 0 0 1 5 5v1a3.5 3.5 0 0 1-6.2 2.2l-.7-.9h-4.2l-.7.9A3.5 3.5 0 0 1 3 13v-1a5 5 0 0 1 5-5Z",
+          "M7.5 11.5h3","M9 10v3"], c:[[15.7,11.2,.9],[17.6,13.4,.9]]},
+  holds:{p:["M6.5 19c1.5-3.5 3.5-5.5 5-8.5s1.5-5 1.5-5"],
+         c:[[6.5,17.5,2],[12,11,2.4],[17,5.5,1.8]]},
+  reel:{p:["M4 6h16a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1Z","M10 9.5l5 2.5-5 2.5z"]},
+  shoe:{p:["M3 16h8l3.5-3 3 1.5A4 4 0 0 1 21 18H3z","M3 16v-3","M6.5 13v3"]},
+  pan:{p:["M3 11h12a4 4 0 0 1 0 8H7a4 4 0 0 1-4-4z","M15 11h6"]},
+  table:{p:["M12 9a5 3 0 1 0 0 6 5 3 0 1 0 0-6Z"],
+         c:[[12,4.5,1.6],[18.5,8.5,1.6],[18.5,15.5,1.6],[12,19.5,1.6],[5.5,15.5,1.6],[5.5,8.5,1.6]]}
+};
+function glyph(name,size){
+  var g=GLYPHS[name]||GLYPHS.table, ns="http://www.w3.org/2000/svg", z=size||26;
+  var svg=document.createElementNS(ns,"svg");
+  svg.setAttribute("viewBox","0 0 24 24");
+  svg.setAttribute("width",String(z)); svg.setAttribute("height",String(z));
+  svg.setAttribute("fill","none"); svg.setAttribute("stroke","currentColor");
+  svg.setAttribute("stroke-width","1.8"); svg.setAttribute("stroke-linecap","round");
+  svg.setAttribute("stroke-linejoin","round"); svg.setAttribute("aria-hidden","true");
+  (g.p||[]).forEach(function(d){
+    var e=document.createElementNS(ns,"path"); e.setAttribute("d",d); svg.appendChild(e);});
+  (g.c||[]).forEach(function(c){
+    var e=document.createElementNS(ns,"circle");
+    e.setAttribute("cx",String(c[0]));e.setAttribute("cy",String(c[1]));e.setAttribute("r",String(c[2]));
+    e.setAttribute("fill","currentColor");e.setAttribute("stroke","none");svg.appendChild(e);});
+  return svg;
+}
+function artFor(a){
+  if(a.art&&GLYPHS[a.art])return a.art;
+  var t=(a.title||"").toLowerCase();
+  if(/trivia|quiz|pub/.test(t))return "quiz";
+  if(/board|game night|cards|chess/.test(t))return "dice";
+  if(/smash|esports|gaming|valorant|mario/.test(t))return "pad";
+  if(/boulder|climb|wall/.test(t))return "holds";
+  if(/film|screening|cinema|movie/.test(t))return "reel";
+  if(/run|jog|park/.test(t))return "shoe";
+  if(/cook|bake|food|dinner/.test(t))return "pan";
+  return "table";
+}
+function artTile(a,size){
+  var d=el("div","arttile");
+  d.appendChild(glyph(artFor(a),size||27));
+  return d;
 }
 
 /* ---------- time ---------- */
@@ -1107,25 +1164,33 @@ function makeEmpty(h,p){
   var d=el("div","empty"); d.appendChild(el("h4",null,h)); d.appendChild(el("p",null,p)); return d;
 }
 function progressBar(a){
-  var conf=confirmedSeats(a.id).length, taken=takenSeats(a.id).length;
+  var conf=confirmedSeats(a.id).length, taken=takenSeats(a.id).length, cap0=capOf(a);
   var booked=a.kind==="booked";
-  var cur=booked?conf:taken, max=booked?FLOOR:capOf(a);
   var box=el("div","prog");
-  var track=el("div","track"), fill=el("div","fill"+(booked&&conf<FLOOR?" gold":""));
-  fill.style.width=Math.min(100,(cur/max)*100)+"%";
-  track.appendChild(fill); box.appendChild(track);
-  var cap=el("div","cap");
-  var left=el("span");
+  var track=el("div","track");
+  /* seats claimed sit behind seats actually confirmed, so you can see the gap */
+  var soft=el("div","fill soft"); soft.style.width=Math.min(100,(taken/cap0)*100)+"%";
+  track.appendChild(soft);
+  var firm=el("div","fill"+(booked&&conf<FLOOR?" gold":""));
+  firm.style.width=Math.min(100,((booked?conf:taken)/cap0)*100)+"%";
+  track.appendChild(firm);
   if(booked){
-    left.innerHTML = conf>=FLOOR ? "<b>Going ahead</b> — "+conf+" confirmed"
-      : "<b>"+(FLOOR-conf)+" more</b> to confirm or it cancels";
-  } else {
-    left.innerHTML = "<b>"+taken+" of "+capOf(a)+"</b> seats taken";
+    var notch=el("div","notch"); notch.style.left=((FLOOR/cap0)*100)+"%";
+    notch.title="needs "+FLOOR+" confirmed"; track.appendChild(notch);
   }
-  cap.appendChild(left);
+  box.appendChild(track);
+  var capr=el("div","cap"), left=el("span");
+  if(booked){
+    left.innerHTML = conf>=FLOOR
+      ? "<b>Going ahead</b> — "+conf+" confirmed"
+      : "<b>"+taken+" seated</b> · needs "+FLOOR+" confirmed";
+  } else {
+    left.innerHTML = "<b>"+taken+" of "+cap0+"</b> seats taken";
+  }
+  capr.appendChild(left);
   var tc=tableCount(Math.max(conf,taken));
-  cap.appendChild(el("span",null,(tc>1?tc+" tables · ":"")+(booked?"booked":"drop-in")));
-  box.appendChild(cap);
+  capr.appendChild(el("span",null,(tc>1?tc+" tables · ":"")+(booked?"booked":"drop-in")));
+  box.appendChild(capr);
   return box;
 }
 
@@ -1183,7 +1248,7 @@ function activityCard(a){
   (a.attrs||[]).forEach(function(t){ if(map[t])chips.appendChild(el("span","chip "+map[t][1],map[t][0])); });
   txt.appendChild(chips);
   row.appendChild(txt);
-  var fig=el("div","fig"); fig.appendChild(figFor(a,100,true)); row.appendChild(fig);
+  var fig=el("div","fig"); fig.appendChild(artTile(a,29)); row.appendChild(fig);
   card.appendChild(row);
 
   var foot=el("div","foot");
@@ -1245,6 +1310,7 @@ function renderWeek(){
     pr.style.marginTop="9px"; sBox.appendChild(pr);
   }
 
+  var met=renderMet(); if(met) sBox.appendChild(met);
   var mine=myActivities().slice().sort(function(x,y){
     var r=weekRank(x)-weekRank(y); return r!==0?r:ts(x)-ts(y);
   });
@@ -1266,6 +1332,54 @@ function weekRank(a){
   if(ph==="locked")return 3;
   if(ph==="open"||ph==="confirming")return 4;
   return 5;
+}
+function peopleMet(){
+  if(!state.me)return [];
+  var out={};
+  state.activities.forEach(function(a){
+    var ci=myCheckin(a); if(!(ci&&ci.madeIt))return;
+    var sigs=state.signals[a.id]||{}, mine=sigs[state.me.id];
+    myTable(a.id).forEach(function(p){
+      if(p.studentId===state.me.id)return;
+      var th=sigs[p.studentId];
+      var mutual=!!(mine&&th&&(mine.friends||[]).indexOf(p.studentId)>=0
+        &&(th.friends||[]).indexOf(state.me.id)>=0);
+      var cur=out[p.studentId];
+      if(!cur){ out[p.studentId]={id:p.studentId,name:p.name,act:a,at:ts(a),mutual:mutual,times:1}; }
+      else{
+        cur.times++;
+        if(mutual)cur.mutual=true;
+        if(ts(a)>cur.at){cur.at=ts(a);cur.act=a;}
+      }
+    });
+  });
+  return Object.keys(out).map(function(k){return out[k];})
+    .sort(function(x,y){return y.at-x.at;});
+}
+function renderMet(){
+  var list=peopleMet();
+  if(!list.length)return null;
+  var box=el("div","stackv");
+  var h=el("div","sectionlabel","People you've met"); box.appendChild(h);
+  var card=el("div","card pad");
+  var roster=el("div","roster");
+  list.slice(0,12).forEach(function(m){
+    var row=el("button","person"); row.type="button";
+    row.appendChild(el("div","avatar",initials(m.name)));
+    var b=el("div");
+    b.appendChild(el("div","nm",m.name));
+    b.appendChild(el("div","rl", m.times>1 ? m.times+" times · last at "+m.act.title
+                                          : "at "+m.act.title));
+    row.appendChild(b);
+    if(m.mutual){
+      var t=el("div","end"); t.appendChild(el("span","chip ok","mutual")); row.appendChild(t);
+    }
+    row.addEventListener("click",function(){ openTableSheet(m.act); });
+    roster.appendChild(row);
+  });
+  card.appendChild(roster); box.appendChild(card);
+  box.appendChild(el("p","foot","Tap anyone to reopen the table you met at — the chat never closes."));
+  return box;
 }
 function weekCard(a){
   var card=el("div","card pad stackv");
