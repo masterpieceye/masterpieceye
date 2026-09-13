@@ -141,6 +141,30 @@ Press a button, get a group, agree a time between you — no weekly cycle.
 Matching runs on the client that completes the pool, under the same ranked-and-claim
 pattern as seats. Blocked pairs are excluded before ranking.
 
+## Signing in
+
+A full-screen three-step flow: university email, a code, then name, date of birth and
+intent. Reachable from the top bar when signed out, and it is what any action needing
+an account routes through - claim a seat while signed out and the claim completes on
+the other side of it.
+
+What is real and what is not, stated on the screen rather than implied:
+
+- **The domain check is real.** `.edu`, `.edu.xx` and `.ac.xx` pass; gmail and the
+  other consumer domains are refused by name, because campus-only is an actual product
+  rule and it demos the rule rather than describing it.
+- **The code step is not real.** No mail is sent, any six digits pass, and the screen
+  says so. A real build sends a one-time code and nothing else.
+- **The address never leaves the device.** It is kept in `localStorage` and is
+  deliberately *not* written to the shared database, because anyone with the artifact
+  link can read that.
+- **There is no "continue with Discord" button**, and there will not be one here.
+  Credential-shaped UI that is not real is phishing practice regardless of intent.
+  Discord linking lives in the profile, clearly labelled as simulated.
+
+Sign out is in the You tab, which is also the quickest way to demo the app as a
+different student.
+
 ## Not built yet
 
 Host briefing flow, a moderator's view of the report queue, and real `.edu`

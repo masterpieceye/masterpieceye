@@ -250,6 +250,18 @@ svg{display:block}
 @keyframes spark{0%{opacity:1;transform:translate(0,0) scale(1) rotate(0)}
   100%{opacity:0;transform:translate(var(--dx),var(--dy)) scale(.3) rotate(180deg)}}
 
+.signin{margin-left:auto;font-size:13px;font-weight:700;color:var(--green);
+  border:1.5px solid var(--green);border-radius:999px;padding:5px 13px}
+.auth{position:fixed;inset:0;z-index:78;outline:none;background:var(--ground);overflow-y:auto;
+  display:flex;flex-direction:column;padding:22px 22px calc(26px + env(safe-area-inset-bottom,0px))}
+.auth .atop{display:flex;align-items:center;gap:12px;margin-bottom:22px}
+.auth .abrand{font-family:'Fraunces',serif;font-weight:700;font-size:24px;letter-spacing:-.025em}
+.auth .aback{margin-left:auto;font-size:13.5px;font-weight:600;color:var(--ink-2)}
+.auth .abody{flex:1;display:flex;flex-direction:column;gap:15px;max-width:420px;width:100%;margin:0 auto}
+.auth h2{font-size:27px;font-weight:700;letter-spacing:-.02em;line-height:1.15}
+.auth .abody>p{font-size:15.5px;color:var(--ink-2);line-height:1.5;margin-top:-6px}
+.auth .codein{font-family:'IBM Plex Mono',monospace;font-size:26px;letter-spacing:.32em;
+  text-align:center;font-variant-numeric:tabular-nums}
 .onb{position:fixed;inset:0;z-index:75;outline:none;background:var(--ground);display:flex;flex-direction:column;
   padding:26px 24px calc(24px + env(safe-area-inset-bottom,0px));gap:16px}
 .onb .body{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;
@@ -365,6 +377,7 @@ body.presenting .screens{padding-bottom:150px}
   <div class="topbar">
     <span class="brand">Lobby</span>
     <button class="streak zero" id="streak" type="button" aria-label="Your streak"></button>
+    <button class="signin" id="signin" type="button" hidden>Sign in</button>
   </div>
 
   <div class="screens">
@@ -403,13 +416,14 @@ body.presenting .screens{padding-bottom:150px}
 <div class="veil" id="veil" hidden><div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title"></div></div>
 <div class="celebrate" id="celebrate" hidden role="dialog" aria-modal="true" aria-labelledby="celebrate-title"></div>
 <div class="onb" id="onb" hidden role="dialog" aria-modal="true" aria-labelledby="onb-title"></div>
+<div class="auth" id="auth" hidden role="dialog" aria-modal="true" aria-labelledby="auth-title"></div>
 
 <script>
 (function(){
 "use strict";
 
 var CAP=6, FLOOR=4, PRICE=5;
-var BUILD="Build 11 · 13 Sep 2026";
+var BUILD="Build 12 · 13 Sep 2026";
 var CONFIRM_OPEN_H=36, CONFIRM_CLOSE_H=24, EVENT_LEN_H=3;
 var LS_ME="lobby.me.v1", LS_FILTERS="lobby.filters.v1", LS_LOCAL="lobby.localdb.v1",
     LS_ONB="lobby.onb.v1", LS_SOUND="lobby.sound.v1";
@@ -1413,10 +1427,15 @@ function render(){
   setTimeout(function(){ renderQueued=false; renderNow(); },0);
 }
 function renderNow(){
-  renderStreak(); renderTabs();
+  renderSignIn(); renderStreak(); renderTabs();
   if(state.tab==="slate")renderSlate();
   if(state.tab==="week")renderWeek();
   if(state.tab==="you")renderYou();
+}
+function renderSignIn(){
+  var b=$("signin");
+  b.hidden=!!state.me;
+  b.onclick=function(){ openSignIn(null); };
 }
 function renderStreak(){
   var s=stats(), b=$("streak");
@@ -1985,6 +2004,17 @@ function renderYou(){
       "Simulated here — a real build would read your server list over OAuth and never show it to anyone. A shared niche server is the strongest signal there is."));
   }
 
+  if(state.me){
+    var so=el("div","card pad");
+    var sorow=el("div","switchrow");
+    var sol=el("div");
+    sol.appendChild(el("div","lbl","Signed in"));
+    sol.appendChild(el("div","sub",state.me.email||"this device"));
+    sorow.appendChild(sol);
+    var sob=el("button","btn ghost sm auto","Sign out"); sob.type="button";
+    sob.style.marginLeft="auto"; sob.addEventListener("click",signOut);
+    sorow.appendChild(sob); so.appendChild(sorow); b.appendChild(so);
+  }
   var pref=el("div","card pad");
   var sr=el("div","switchrow");
   var lab=el("div");
@@ -2296,6 +2326,9 @@ function openActivitySheet(a){
 }
 
 function openJoinSheet(a){
+  openSignIn(function(){ claimSeat(a); });
+}
+function openJoinSheetLegacy(a){
   openSheet(function(s){
     sheetHead(s,"Take the seat","Two questions and a date of birth. You only need this to sit down — browsing needs nothing.");
     var f1=el("div","field"); f1.appendChild(el("label",null,"First name"));
@@ -2483,6 +2516,151 @@ function pickList(roster,bucket){
     box.appendChild(row);
   });
   return box;
+}
+
+/* ============================================================ signing in
+   Campus-only is a real product rule, so the address check is real. The code
+   step is not - no mail is sent and any six digits pass - and the screen says
+   so rather than pretending. The address never leaves this device: it is not
+   written to the shared database, because anyone with the link can read that. */
+function isUniEmail(e){
+  if(!/^[^@\s]+@[^@\s]+\.[a-z]{2,}$/i.test(e))return false;
+  var d=e.split("@")[1].toLowerCase();
+  if(/^(gmail|hotmail|outlook|yahoo|icloud|proton|protonmail|live|aol|mail)\./.test(d))return false;
+  return /\.edu$/.test(d)||/\.edu\.[a-z]{2,}$/.test(d)||/\.ac\.[a-z]{2,}$/.test(d);
+}
+var authState={step:0,email:"",after:null};
+function openSignIn(after){
+  authState={step:0,email:"",after:after||null};
+  $("auth").hidden=false;
+  drawAuth();
+}
+function closeSignIn(){ $("auth").hidden=true; render(); }
+function authHead(box,title,sub){
+  var h=el("h2",null,title); h.id="auth-title"; box.appendChild(h);
+  if(sub){ var p=el("p",null,sub); box.appendChild(p); }
+}
+function drawAuth(){
+  var a=$("auth"); a.innerHTML="";
+  var top=el("div","atop");
+  var brand=el("div","abrand","Lobby"); top.appendChild(brand);
+  if(authState.step>0){
+    var back=el("button","aback","‹ Back"); back.type="button";
+    back.addEventListener("click",function(){ authState.step--; drawAuth(); });
+    top.appendChild(back);
+  }
+  a.appendChild(top);
+  var body=el("div","abody"); a.appendChild(body);
+
+  if(authState.step===0){
+    authHead(body,"Meet people who are into what you're into.",
+      "Campus only. Six seats, $5 a seat, and something already happening.");
+    var f=el("div","field");
+    f.appendChild(el("label",null,"University email"));
+    var i=el("input"); i.id="auth-email"; i.type="email"; i.inputMode="email";
+    i.autocomplete="email"; i.placeholder="you@student.mmu.edu.my"; i.value=authState.email;
+    f.appendChild(i);
+    f.appendChild(el("div","hint","We check the domain, not you. A personal address won't get in — that's the whole point of a campus app."));
+    body.appendChild(f);
+    var err=el("div","note bad"); err.hidden=true; body.appendChild(err);
+    var go=el("button","btn","Continue"); go.type="button";
+    var submit=function(){
+      var v=i.value.trim();
+      if(!v){ err.textContent="Pop your university address in."; err.hidden=false; i.focus(); return; }
+      if(!isUniEmail(v)){
+        err.textContent = /^(gmail|hotmail|outlook|yahoo|icloud)\./.test((v.split("@")[1]||"").toLowerCase())
+          ? "Lobby is campus-only, so that needs to be your university address."
+          : "That doesn't look like a university address — try the one ending .edu, .edu.my or .ac.uk.";
+        err.hidden=false; i.focus(); return;
+      }
+      authState.email=v; authState.step=1; drawAuth();
+    };
+    go.addEventListener("click",submit);
+    i.addEventListener("keydown",function(e){ if(e.key==="Enter")submit(); });
+    body.appendChild(go);
+    var skip=el("button","linkish","Have a look around first"); skip.type="button";
+    skip.addEventListener("click",closeSignIn); body.appendChild(skip);
+  }
+  else if(authState.step===1){
+    authHead(body,"Check your email.","We sent a six-digit code to "+authState.email+".");
+    var pf=el("div","field");
+    pf.appendChild(el("label",null,"Code"));
+    var ci=el("input"); ci.id="auth-code"; ci.type="text"; ci.inputMode="numeric";
+    ci.maxLength=6; ci.placeholder="000000"; ci.className="codein";
+    pf.appendChild(ci); body.appendChild(pf);
+    var sim=el("div","note warn");
+    sim.innerHTML="<b>Prototype.</b> No email was actually sent and any six digits will do. A real build would send a one-time code and nothing else.";
+    body.appendChild(sim);
+    var cerr=el("div","note bad"); cerr.hidden=true; body.appendChild(cerr);
+    var go2=el("button","btn","Verify"); go2.type="button";
+    var submit2=function(){
+      if(!/^\d{6}$/.test(ci.value.trim())){
+        cerr.textContent="Six digits — any six, it's a prototype."; cerr.hidden=false; ci.focus(); return;
+      }
+      authState.step=2; drawAuth();
+    };
+    go2.addEventListener("click",submit2);
+    ci.addEventListener("keydown",function(e){ if(e.key==="Enter")submit2(); });
+    body.appendChild(go2);
+    setTimeout(function(){ ci.focus(); },60);
+  }
+  else {
+    authHead(body,"Nearly there.","Only your first name ever reaches a table.");
+    var nf=el("div","field"); nf.appendChild(el("label",null,"First name"));
+    var ni=el("input"); ni.id="auth-name"; ni.type="text"; ni.autocomplete="given-name";
+    ni.placeholder="What the table calls you"; nf.appendChild(ni); body.appendChild(nf);
+
+    var df=el("div","field"); df.appendChild(el("label",null,"Date of birth"));
+    var di=el("input"); di.id="auth-dob"; di.type="date"; df.appendChild(di);
+    df.appendChild(el("div","hint","18+ only, and that's firm — a romantic-signal feature plus minors isn't a line we get to blur."));
+    body.appendChild(df);
+
+    var inf=el("div","field"); inf.appendChild(el("label",null,"What are you here for?"));
+    var chosen={v:"friends"}; var pick=el("div","pick");
+    [["friends","Just here for friends"],["open","Open to meeting someone"],["unsure","Not sure yet"]]
+      .forEach(function(o,idx){
+        var pb=el("button","pickbtn",o[1]); pb.type="button";
+        pb.setAttribute("aria-pressed",String(idx===0));
+        pb.addEventListener("click",function(){
+          chosen.v=o[0];
+          Array.prototype.forEach.call(pick.children,function(k){k.setAttribute("aria-pressed","false");});
+          pb.setAttribute("aria-pressed","true");
+        });
+        pick.appendChild(pb);
+      });
+    inf.appendChild(pick);
+    inf.appendChild(el("div","hint","Asked once, shown to nobody, never used to decide who you sit with. Say friends and you will never be asked to rate anyone romantically."));
+    body.appendChild(inf);
+
+    var aerr=el("div","note bad"); aerr.hidden=true; body.appendChild(aerr);
+    var done=el("button","btn","Create my account"); done.type="button";
+    done.addEventListener("click",async function(){
+      var nm=ni.value.trim(), dob=di.value;
+      var bad=function(m){ aerr.textContent=m; aerr.hidden=false; };
+      if(nm.length<2){ bad("Give the table something to call you."); ni.focus(); return; }
+      if(!dob){ bad("We need a date of birth for the 18+ check."); di.focus(); return; }
+      var age=ageFrom(dob);
+      if(age===null){ bad("That date didn't parse."); return; }
+      if(age<18){ bad("Lobby is 18+ only. That's a hard line, not a setting — sorry."); return; }
+      if(age>120){ bad("That date is in the wrong century."); return; }
+      done.disabled=true; done.textContent="Setting you up…";
+      await createMe(nm,dob,chosen.v);
+      state.me.email=authState.email;          // stays on this device, never in the shared db
+      lsSet(LS_ME,state.me);
+      var after=authState.after;
+      closeSignIn();
+      if(after) after();
+    });
+    body.appendChild(done);
+  }
+  a.focus();
+}
+function signOut(){
+  askSheet({title:"Sign out?",body:"Your seats and signals stay in the shared data — this device just forgets who you were, which is how you demo it as somebody else.",
+    confirmLabel:"Sign out",danger:true,onConfirm:function(){
+      localStorage.removeItem(LS_ME); state.me=null; state.seenSeats={};
+      switchTab("slate"); toast("Signed out.");
+    }});
 }
 
 /* ============================================================ onboarding */
