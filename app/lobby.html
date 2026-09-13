@@ -1,1360 +1,1524 @@
 <title>Claim a Seat</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Public+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
 <style>
 :root{
   --ground:#EDEAE3; --ground-2:#E3DFD4; --card:#FCFBF8; --card-2:#F5F2EA;
   --ink:#17201B; --ink-2:#4C5A52; --ink-3:#7E8A83;
   --line:#D6D1C5; --line-2:#E7E3D9;
-  --green:#1F6B4F; --green-bg:#DCEAE1; --green-ink:#0E3D2C;
-  --clay:#A8501F; --clay-bg:#F4E2D4;
+  --green:#1F6B4F; --green-deep:#14503A; --green-bg:#DCEAE1; --green-ink:#0E3D2C;
+  --clay:#A8501F; --clay-deep:#7E3A13; --clay-bg:#F4E2D4;
   --red:#8E2F24; --red-bg:#F3DED9;
+  --gold:#B07D16; --gold-bg:#F6E9C9;
   --shadow:0 1px 2px rgba(23,32,27,.05), 0 10px 26px -18px rgba(23,32,27,.35);
-  --radius:12px;
+  --lift:0 2px 4px rgba(23,32,27,.06), 0 18px 40px -24px rgba(23,32,27,.5);
+  --r:14px;
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
     --ground:#121614; --ground-2:#0C100E; --card:#1A201C; --card-2:#212824;
     --ink:#E7EBE7; --ink-2:#A6B1AA; --ink-3:#74807A;
     --line:#2B332E; --line-2:#232A26;
-    --green:#4FB98A; --green-bg:#152B22; --green-ink:#A6DcC3;
-    --clay:#DB8B52; --clay-bg:#2D2018;
+    --green:#4FB98A; --green-deep:#2E8C64; --green-bg:#152B22; --green-ink:#A6DCC3;
+    --clay:#DB8B52; --clay-deep:#A9663A; --clay-bg:#2D2018;
     --red:#DE7C6D; --red-bg:#2E1A17;
+    --gold:#D9B05C; --gold-bg:#2C2414;
     --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 26px -18px rgba(0,0,0,.7);
+    --lift:0 2px 4px rgba(0,0,0,.5), 0 18px 40px -24px rgba(0,0,0,.9);
   }
 }
 :root[data-theme="dark"]{
   --ground:#121614; --ground-2:#0C100E; --card:#1A201C; --card-2:#212824;
   --ink:#E7EBE7; --ink-2:#A6B1AA; --ink-3:#74807A;
   --line:#2B332E; --line-2:#232A26;
-  --green:#4FB98A; --green-bg:#152B22; --green-ink:#A6DCC3;
-  --clay:#DB8B52; --clay-bg:#2D2018;
+  --green:#4FB98A; --green-deep:#2E8C64; --green-bg:#152B22; --green-ink:#A6DCC3;
+  --clay:#DB8B52; --clay-deep:#A9663A; --clay-bg:#2D2018;
   --red:#DE7C6D; --red-bg:#2E1A17;
+  --gold:#D9B05C; --gold-bg:#2C2414;
   --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 26px -18px rgba(0,0,0,.7);
+  --lift:0 2px 4px rgba(0,0,0,.5), 0 18px 40px -24px rgba(0,0,0,.9);
 }
 
 *{box-sizing:border-box}
 body{
-  background:var(--ground-2);
-  color:var(--ink);
+  background:var(--ground-2); color:var(--ink);
   font-family:'Public Sans',-apple-system,BlinkMacSystemFont,sans-serif;
-  line-height:1.5;
-  -webkit-font-smoothing:antialiased;
+  line-height:1.5; -webkit-font-smoothing:antialiased;
   background-image:radial-gradient(var(--line) 1px, transparent 1px);
   background-size:22px 22px; background-position:-11px -11px;
 }
 h1,h2,h3,h4{font-family:'Fraunces',Georgia,serif;margin:0;text-wrap:balance;color:var(--ink)}
 p{margin:0}
-button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
-:focus-visible{outline:2px solid var(--green);outline-offset:2px;border-radius:4px}
+button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;text-align:left}
+:focus-visible{outline:2.5px solid var(--green);outline-offset:2px;border-radius:6px}
 .mono{font-family:'IBM Plex Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums}
 [hidden]{display:none!important}
+svg{display:block}
 
-/* ---------- app shell ---------- */
-.app{
-  max-width:460px;margin:0 auto;min-height:100svh;
-  background:var(--ground);
-  border-inline:1px solid var(--line);
-  display:flex;flex-direction:column;
-}
-@media (max-width:480px){ .app{border-inline:none} }
+/* ============ shell ============ */
+.app{max-width:468px;margin:0 auto;min-height:100svh;background:var(--ground);
+  border-inline:1px solid var(--line);display:flex;flex-direction:column}
+@media (max-width:500px){ .app{border-inline:none} }
 
-.topbar{
-  position:sticky;top:0;z-index:20;background:var(--ground);
-  border-bottom:1px solid var(--line);
-  padding-block:14px;padding-inline:18px;
-  display:flex;align-items:baseline;gap:10px;
-}
-.topbar .brand{font-family:'Fraunces',serif;font-weight:700;font-size:21px;letter-spacing:-.02em}
-.topbar .tag{font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)}
-.topbar .who{margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--ink-2);
-  background:var(--card);border:1px solid var(--line);border-radius:999px;padding:3px 10px;max-width:42%;
-  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.topbar{position:sticky;top:0;z-index:20;background:var(--ground);border-bottom:1px solid var(--line);
+  padding-block:13px;padding-inline:18px;display:flex;align-items:center;gap:10px}
+.topbar .brand{font-family:'Fraunces',serif;font-weight:700;font-size:22px;letter-spacing:-.025em}
+.streak{margin-left:auto;display:flex;align-items:center;gap:6px;background:var(--gold-bg);
+  color:var(--gold);border-radius:999px;padding:5px 11px 5px 8px;font-weight:700;font-size:13.5px}
+.streak.zero{background:var(--card-2);color:var(--ink-3)}
+.streak .n{font-family:'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums}
 
-.screens{flex:1;padding-inline:18px;padding-block:18px 96px}
-.screen{display:flex;flex-direction:column;gap:16px}
+.screens{flex:1;padding-inline:16px;padding-block:16px 104px}
+.screen{display:flex;flex-direction:column;gap:14px}
 
-.tabbar{
-  position:sticky;bottom:0;z-index:20;display:grid;grid-template-columns:repeat(3,1fr);
+.tabbar{position:sticky;bottom:0;z-index:20;display:grid;grid-template-columns:repeat(3,1fr);
   background:var(--ground);border-top:1px solid var(--line);
-}
-.tabbar button{
-  padding-block:11px 13px;display:flex;flex-direction:column;align-items:center;gap:3px;
-  font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;
-  color:var(--ink-3);border-top:2px solid transparent;
-}
-.tabbar button[aria-selected="true"]{color:var(--green);border-top-color:var(--green)}
-.tabbar .dot{width:6px;height:6px;border-radius:50%;background:var(--clay);margin-top:-9px;margin-bottom:3px}
+  padding-bottom:env(safe-area-inset-bottom,0px)}
+.tabbar button{padding-block:9px 11px;display:flex;flex-direction:column;align-items:center;gap:3px;
+  font-size:11px;font-weight:700;letter-spacing:.02em;color:var(--ink-3);position:relative}
+.tabbar button[aria-selected="true"]{color:var(--green)}
+.tabbar .badge{position:absolute;top:5px;left:50%;margin-left:8px;width:9px;height:9px;
+  border-radius:50%;background:var(--clay);border:2px solid var(--ground)}
 
-/* ---------- headings ---------- */
-.head{display:flex;flex-direction:column;gap:5px}
-.head h2{font-size:25px;font-weight:600;letter-spacing:-.015em}
-.head .sub{font-size:14px;color:var(--ink-2);max-width:46ch}
-.rule{height:1px;background:var(--line);border:none;margin:0}
+/* ============ type ============ */
+.head h2{font-size:27px;font-weight:600;letter-spacing:-.02em;line-height:1.15}
+.head .sub{font-size:14.5px;color:var(--ink-2);margin-top:5px;max-width:44ch}
+.sectionlabel{font-size:11.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)}
 
-/* ---------- activity card ---------- */
-.card{
-  background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
-  box-shadow:var(--shadow);overflow:hidden;
-}
-.act{display:grid;grid-template-columns:1fr 104px;gap:0;text-align:left;width:100%}
-.act:hover{border-color:var(--ink-3)}
-.act .main{padding:15px 4px 15px 16px;display:flex;flex-direction:column;gap:7px;min-width:0}
-.act h3{font-size:18px;font-weight:600;letter-spacing:-.01em}
-.act .meta{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ink-2)}
-.act .side{padding:14px 14px 12px 0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px}
-.act .seatline{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink-3);letter-spacing:.03em}
-.act .seatline.full{color:var(--clay)}
-.act .seatline.mine{color:var(--green)}
+/* ============ buttons ============ */
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;
+  padding:14px 18px;border-radius:12px;font-weight:800;font-size:15.5px;letter-spacing:.005em;
+  background:var(--green);color:var(--ground);position:relative;top:0;
+  box-shadow:0 4px 0 var(--green-deep);transition:top .07s ease, box-shadow .07s ease}
+.btn:active{top:3px;box-shadow:0 1px 0 var(--green-deep)}
+.btn[disabled]{opacity:.5;cursor:not-allowed;top:0;box-shadow:0 4px 0 var(--green-deep)}
+.btn.ghost{background:var(--card);color:var(--ink);box-shadow:0 4px 0 var(--line);border:1px solid var(--line)}
+.btn.ghost:active{box-shadow:0 1px 0 var(--line)}
+.btn.clay{background:var(--clay);color:var(--ground);box-shadow:0 4px 0 var(--clay-deep)}
+.btn.clay:active{box-shadow:0 1px 0 var(--clay-deep)}
+.btn.sm{padding:10px 14px;font-size:14px;border-radius:10px}
+.btn.auto{width:auto}
+.linkish{font-size:14px;font-weight:600;color:var(--ink-2);text-decoration:underline;
+  text-underline-offset:3px;padding:6px 2px;width:100%;text-align:center}
+
+/* ============ cards ============ */
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow)}
+.pad{padding:16px}
+.stackv{display:flex;flex-direction:column;gap:12px}
+
+.act{width:100%;display:block;transition:transform .08s ease}
+.act:active{transform:scale(.985)}
+.act .row{display:flex;gap:12px;align-items:flex-start;padding:15px 15px 0;width:100%;cursor:pointer}
+.act .txt{min-width:0;flex:1}
+.act h3{font-size:19px;font-weight:600;letter-spacing:-.015em;line-height:1.2}
+.act .when{font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:var(--ink-2);margin-top:5px}
+.act .fig{flex-shrink:0}
+.act .foot{padding:11px 15px 14px;display:flex;flex-direction:column;gap:10px}
 
 .chips{display:flex;flex-wrap:wrap;gap:5px}
-.chip{
-  font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.06em;text-transform:uppercase;
-  padding:3px 7px;border-radius:4px;background:var(--card-2);color:var(--ink-2);border:1px solid var(--line-2);
-}
+.chip{font-size:10.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;
+  padding:4px 8px;border-radius:6px;background:var(--card-2);color:var(--ink-2);border:1px solid var(--line-2)}
 .chip.ok{background:var(--green-bg);color:var(--green-ink);border-color:transparent}
 .chip.warn{background:var(--clay-bg);color:var(--clay);border-color:transparent}
 .chip.bad{background:var(--red-bg);color:var(--red);border-color:transparent}
+.chip.gold{background:var(--gold-bg);color:var(--gold);border-color:transparent}
 
-/* table drawing */
-.tablefig{display:block}
+/* progress */
+.prog{display:flex;flex-direction:column;gap:6px}
+.prog .track{height:9px;border-radius:99px;background:var(--card-2);border:1px solid var(--line-2);
+  overflow:hidden;position:relative}
+.prog .fill{height:100%;background:var(--green);border-radius:99px;transition:width .5s cubic-bezier(.2,.8,.2,1)}
+.prog .fill.gold{background:var(--gold)}
+.prog .cap{font-size:12.5px;color:var(--ink-2);display:flex;justify-content:space-between;gap:8px}
+.prog .cap b{color:var(--ink);font-weight:700}
+
+/* table figure */
 .tablefig .surface{fill:var(--card-2);stroke:var(--line);stroke-width:1.5}
 .tablefig .seat-empty{fill:var(--card);stroke:var(--line);stroke-width:1.5}
 .tablefig .seat-taken{fill:var(--green);stroke:var(--green);stroke-width:1.5}
 .tablefig .seat-me{fill:var(--clay);stroke:var(--clay);stroke-width:1.5}
+.tablefig .pop{animation:pop .34s cubic-bezier(.3,1.5,.5,1) both}
+@keyframes pop{from{transform:scale(.2);opacity:0}to{transform:scale(1);opacity:1}}
 
-/* ---------- filter row ---------- */
+/* ============ urgent banner ============ */
+.urgent{display:block;width:100%;border-radius:var(--r);padding:15px 16px;
+  background:var(--clay);color:var(--ground);box-shadow:0 4px 0 var(--clay-deep);position:relative;top:0;
+  transition:top .07s ease, box-shadow .07s ease}
+.urgent:active{top:3px;box-shadow:0 1px 0 var(--clay-deep)}
+.urgent.calm{background:var(--green);box-shadow:0 4px 0 var(--green-deep)}
+.urgent.calm:active{box-shadow:0 1px 0 var(--green-deep)}
+.urgent .k{font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;opacity:.82}
+.urgent .t{font-family:'Fraunces',serif;font-size:19px;font-weight:600;margin-top:3px;line-height:1.25}
+.urgent .d{font-size:13.5px;margin-top:4px;opacity:.9}
+
+/* ============ misc ============ */
 .filters{display:flex;flex-wrap:wrap;gap:7px}
-.filters button{
-  font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.04em;
-  padding:6px 11px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--ink-2);
-}
-.filters button[aria-pressed="true"]{background:var(--green);border-color:var(--green);color:var(--card)}
+.filters button{font-size:12.5px;font-weight:600;padding:7px 13px;border-radius:999px;
+  border:1.5px solid var(--line);background:var(--card);color:var(--ink-2);transition:transform .08s}
+.filters button:active{transform:scale(.95)}
+.filters button[aria-pressed="true"]{background:var(--green);border-color:var(--green);color:var(--ground)}
 
-/* ---------- generic bits ---------- */
-.btn{
-  display:inline-flex;align-items:center;justify-content:center;gap:8px;
-  padding:12px 18px;border-radius:9px;font-weight:600;font-size:15px;
-  background:var(--green);color:var(--ground);border:1px solid var(--green);width:100%;
-}
-.btn:hover{filter:brightness(1.08)}
-.btn[disabled]{opacity:.45;cursor:not-allowed;filter:none}
-.btn.ghost{background:transparent;color:var(--ink);border-color:var(--line)}
-.btn.ghost:hover{border-color:var(--ink-3);filter:none}
-.btn.danger{background:transparent;color:var(--red);border-color:var(--red)}
-.btn.small{padding:8px 12px;font-size:13.5px;width:auto}
+.note{border-radius:11px;padding:13px 15px;font-size:14px;line-height:1.5;
+  background:var(--green-bg);color:var(--green-ink);border-left:4px solid var(--green)}
+.note.warn{background:var(--clay-bg);color:var(--clay);border-left-color:var(--clay)}
+.note.bad{background:var(--red-bg);color:var(--red);border-left-color:var(--red)}
+.note b{font-weight:800}
 
-.field{display:flex;flex-direction:column;gap:6px}
-.field label{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3)}
-.field input, .field select{
-  font:inherit;padding:11px 13px;border-radius:9px;border:1px solid var(--line);
-  background:var(--card);color:var(--ink);width:100%;
-}
-.field .hint{font-size:12.5px;color:var(--ink-3);line-height:1.45}
+.empty{border:2px dashed var(--line);border-radius:var(--r);padding:26px 20px;
+  display:flex;flex-direction:column;gap:8px;align-items:center;text-align:center;background:transparent}
+.empty h4{font-size:17px;font-weight:600}
+.empty p{font-size:14px;color:var(--ink-2);max-width:34ch}
 
-.note{
-  border-left:3px solid var(--green);background:var(--green-bg);color:var(--green-ink);
-  border-radius:0 9px 9px 0;padding:12px 15px;font-size:13.5px;line-height:1.5;
-}
-.note.warn{border-left-color:var(--clay);background:var(--clay-bg);color:var(--clay)}
-.note.bad{border-left-color:var(--red);background:var(--red-bg);color:var(--red)}
-.note b{font-weight:700}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:13px 11px;text-align:center}
+.stat .v{font-family:'Fraunces',serif;font-size:25px;font-weight:700;line-height:1.1;
+  font-variant-numeric:tabular-nums}
+.stat .l{font-size:11px;font-weight:700;color:var(--ink-3);margin-top:3px;letter-spacing:.02em}
 
-.empty{
-  border:1px dashed var(--line);border-radius:var(--radius);padding:26px 20px;
-  display:flex;flex-direction:column;gap:7px;align-items:flex-start;background:var(--card-2);
-}
-.empty h4{font-size:16px;font-weight:600}
-.empty p{font-size:13.5px;color:var(--ink-2);max-width:40ch}
-
-/* ---------- seat / status strip ---------- */
-.strip{display:flex;align-items:center;gap:10px;padding:11px 14px;border-radius:9px;background:var(--card-2);border:1px solid var(--line-2)}
-.strip .k{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3)}
-.strip .v{margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--ink)}
-.strip .v.urgent{color:var(--clay)}
-
-/* ---------- roster ---------- */
-.roster{display:flex;flex-direction:column;gap:0}
-.person{display:flex;align-items:center;gap:11px;padding:11px 2px;border-bottom:1px solid var(--line-2)}
+.roster{display:flex;flex-direction:column}
+.person{display:flex;align-items:center;gap:11px;padding:11px 2px;border-bottom:1px solid var(--line-2);width:100%}
 .roster .person:last-child{border-bottom:none}
-.avatar{
-  width:32px;height:32px;border-radius:50%;flex-shrink:0;display:grid;place-items:center;
-  background:var(--green-bg);color:var(--green-ink);font-weight:700;font-size:13px;
-}
-.person .nm{font-size:14.5px;font-weight:500}
-.person .rl{font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3)}
-.person .act-btn{margin-left:auto;font-size:18px;color:var(--ink-3);padding:2px 8px;line-height:1}
+.avatar{width:36px;height:36px;border-radius:12px;flex-shrink:0;display:grid;place-items:center;
+  background:var(--green-bg);color:var(--green-ink);font-weight:800;font-size:14px}
+.avatar.me{background:var(--clay-bg);color:var(--clay)}
+.person .nm{font-size:15px;font-weight:600}
+.person .rl{font-size:11.5px;font-weight:600;color:var(--ink-3);margin-top:1px}
+.person .end{margin-left:auto;flex-shrink:0}
+.person .tick{width:26px;height:26px;border-radius:9px;border:2px solid var(--line);display:grid;place-items:center}
+.person[aria-pressed="true"] .tick{background:var(--green);border-color:var(--green)}
+.person[aria-pressed="true"]{background:var(--green-bg);border-radius:11px}
+.dots{font-size:19px;color:var(--ink-3);padding:3px 9px;line-height:1}
 
-/* ---------- chat ---------- */
-.chat{display:flex;flex-direction:column;gap:9px;max-height:340px;overflow-y:auto;padding-right:4px}
+.chat{display:flex;flex-direction:column;gap:9px;max-height:330px;overflow-y:auto;padding-right:3px}
 .msg{display:flex;flex-direction:column;gap:3px;max-width:86%}
-.msg .by{font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--ink-3);letter-spacing:.04em}
-.msg .bubble{background:var(--card);border:1px solid var(--line);border-radius:3px 11px 11px 11px;padding:9px 12px;font-size:14px;line-height:1.45}
+.msg .by{font-size:11px;font-weight:700;color:var(--ink-3)}
+.msg .bubble{background:var(--card);border:1px solid var(--line);border-radius:4px 14px 14px 14px;
+  padding:10px 13px;font-size:14.5px;line-height:1.45}
 .msg.me{align-self:flex-end;align-items:flex-end}
-.msg.me .bubble{background:var(--green-bg);border-color:transparent;color:var(--green-ink);border-radius:11px 3px 11px 11px}
+.msg.me .bubble{background:var(--green);border-color:transparent;color:var(--ground);border-radius:14px 4px 14px 14px}
 .msg.bot .bubble{background:var(--card-2);border-style:dashed}
 .composer{display:flex;gap:8px}
-.composer input{flex:1;font:inherit;padding:11px 13px;border-radius:9px;border:1px solid var(--line);background:var(--card);color:var(--ink);min-width:0}
+.composer input{flex:1;font:inherit;padding:12px 14px;border-radius:11px;border:1.5px solid var(--line);
+  background:var(--card);color:var(--ink);min-width:0}
 
-/* ---------- sheet ---------- */
-.sheet-wrap{position:fixed;inset:0;z-index:50;display:grid;place-items:end center;background:rgba(10,14,12,.42);padding:0}
-.sheet{
-  background:var(--ground);width:100%;max-width:460px;max-height:92svh;overflow-y:auto;
-  border-radius:16px 16px 0 0;border:1px solid var(--line);border-bottom:none;
-  padding:20px 18px calc(20px + env(safe-area-inset-bottom,0px));
-  display:flex;flex-direction:column;gap:15px;
-}
+.field{display:flex;flex-direction:column;gap:7px}
+.field label{font-size:12px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-3)}
+.field input,.field select{font:inherit;padding:13px 14px;border-radius:11px;border:1.5px solid var(--line);
+  background:var(--card);color:var(--ink);width:100%}
+.field input:focus,.field select:focus{border-color:var(--green)}
+.field .hint{font-size:12.5px;color:var(--ink-3);line-height:1.45}
+
+.pick{display:grid;gap:8px}
+.pickbtn{border:1.5px solid var(--line);background:var(--card);border-radius:12px;padding:13px 15px;
+  font-size:15px;font-weight:600;transition:transform .08s}
+.pickbtn:active{transform:scale(.98)}
+.pickbtn[aria-pressed="true"]{border-color:var(--green);background:var(--green-bg);color:var(--green-ink)}
+
+/* ============ overlays ============ */
+.veil{position:fixed;inset:0;z-index:50;background:rgba(10,14,12,.5);display:grid;
+  place-items:end center;animation:fade .18s ease both}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+.sheet{background:var(--ground);width:100%;max-width:468px;max-height:92svh;overflow-y:auto;
+  border-radius:20px 20px 0 0;border:1px solid var(--line);border-bottom:none;
+  padding:10px 16px calc(20px + env(safe-area-inset-bottom,0px));
+  display:flex;flex-direction:column;gap:14px;animation:slideup .26s cubic-bezier(.2,.8,.2,1) both}
+@keyframes slideup{from{transform:translateY(26px)}to{transform:translateY(0)}}
+.grab{width:38px;height:4px;border-radius:99px;background:var(--line);margin:4px auto 2px}
 .sheet-head{display:flex;align-items:flex-start;gap:12px}
-.sheet-head h3{font-size:21px;font-weight:600;letter-spacing:-.015em}
-.sheet-head .x{margin-left:auto;font-size:22px;color:var(--ink-3);line-height:1;padding:0 4px}
+.sheet-head h3{font-size:23px;font-weight:600;letter-spacing:-.02em;line-height:1.15}
+.sheet-head .x{margin-left:auto;font-size:24px;color:var(--ink-3);line-height:1;padding:0 5px;flex-shrink:0}
 
-/* ---------- toast ---------- */
-.toast{
-  position:fixed;left:50%;transform:translateX(-50%);bottom:78px;z-index:80;
-  background:var(--ink);color:var(--ground);padding:11px 16px;border-radius:9px;
-  font-size:13.5px;max-width:min(420px,92vw);box-shadow:var(--shadow);line-height:1.4;
-}
+.celebrate{position:fixed;inset:0;z-index:70;background:var(--ground);display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:16px;padding:28px 26px;text-align:center;
+  animation:fade .2s ease both}
+.celebrate .art{animation:rise .5s cubic-bezier(.2,1.3,.4,1) both}
+@keyframes rise{from{transform:translateY(14px) scale(.86);opacity:0}to{transform:none;opacity:1}}
+.celebrate h2{font-size:31px;font-weight:700;letter-spacing:-.025em;line-height:1.1}
+.celebrate p{font-size:16px;color:var(--ink-2);max-width:32ch;line-height:1.5}
+.celebrate .actions{width:100%;max-width:320px;display:flex;flex-direction:column;gap:9px;margin-top:6px}
+.spark{position:absolute;width:9px;height:9px;border-radius:2px;opacity:0}
+.pop-in{animation:spark .9s ease-out both}
+@keyframes spark{0%{opacity:1;transform:translate(0,0) scale(1) rotate(0)}
+  100%{opacity:0;transform:translate(var(--dx),var(--dy)) scale(.3) rotate(180deg)}}
+
+.onb{position:fixed;inset:0;z-index:75;outline:none;background:var(--ground);display:flex;flex-direction:column;
+  padding:26px 24px calc(24px + env(safe-area-inset-bottom,0px));gap:16px}
+.onb .body{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;
+  gap:14px;text-align:center}
+.onb h2{font-size:29px;font-weight:700;letter-spacing:-.025em;line-height:1.12}
+.onb p{font-size:16px;color:var(--ink-2);max-width:32ch;line-height:1.5}
+.onb .dotrow{display:flex;gap:7px;justify-content:center}
+.onb .d{width:8px;height:8px;border-radius:99px;background:var(--line)}
+.onb .d.on{background:var(--green);width:22px}
+
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:84px;z-index:80;
+  background:var(--ink);color:var(--ground);padding:12px 17px;border-radius:11px;font-size:14px;
+  font-weight:600;max-width:min(420px,92vw);box-shadow:var(--lift);line-height:1.4;
+  animation:toastin .2s cubic-bezier(.2,.9,.3,1) both}
+@keyframes toastin{from{opacity:0;transform:translate(-50%,10px)}to{opacity:1;transform:translate(-50%,0)}}
 .toast.bad{background:var(--red);color:#fff}
 
-/* ---------- demo panel ---------- */
-.demo{border:1px dashed var(--clay);border-radius:var(--radius);padding:15px;display:flex;flex-direction:column;gap:11px;background:var(--clay-bg)}
-.demo h4{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--clay)}
-.demo p{font-size:12.5px;color:var(--clay);line-height:1.45}
+.demo{border:2px dashed var(--clay);border-radius:var(--r);padding:15px;display:flex;
+  flex-direction:column;gap:11px;background:var(--clay-bg)}
+.demo h4{font-size:12px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:var(--clay)}
+.demo p{font-size:13px;color:var(--clay);line-height:1.45}
 .demo .row{display:flex;flex-wrap:wrap;gap:7px}
-.demo button{
-  font-family:'IBM Plex Mono',monospace;font-size:11.5px;padding:7px 11px;border-radius:7px;
-  border:1px solid var(--clay);color:var(--clay);background:transparent;
+.demo button{font-size:12.5px;font-weight:700;padding:8px 12px;border-radius:9px;
+  border:1.5px solid var(--clay);color:var(--clay);background:transparent}
+.demo button:active{background:var(--card)}
+
+.foot{font-size:12.5px;color:var(--ink-3);line-height:1.5}
+.switchrow{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line-2)}
+.switchrow:last-child{border-bottom:none}
+.switchrow .lbl{font-size:14.5px;font-weight:600}
+.switchrow .sub{font-size:12.5px;color:var(--ink-3);margin-top:2px}
+.sw{margin-left:auto;width:46px;height:27px;border-radius:99px;background:var(--line);
+  position:relative;flex-shrink:0;transition:background .16s}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:21px;height:21px;border-radius:50%;
+  background:var(--card);transition:transform .16s cubic-bezier(.2,.9,.3,1);box-shadow:0 1px 3px rgba(0,0,0,.25)}
+.sw[aria-checked="true"]{background:var(--green)}
+.sw[aria-checked="true"]::after{transform:translateX(19px)}
+
+@media (prefers-reduced-motion: reduce){
+  *{animation-duration:.001ms!important;transition-duration:.001ms!important}
 }
-.demo button:hover{background:var(--card)}
-
-.foot{font-size:12px;color:var(--ink-3);line-height:1.5;padding-block:6px}
-.foot a{color:var(--ink-2)}
-
-@media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
 </style>
 
 <div class="app">
   <div class="topbar">
     <span class="brand">Lobby</span>
-    <span class="tag">Prototype</span>
-    <span class="who" id="who">not signed in</span>
+    <button class="streak zero" id="streak" type="button" aria-label="Your streak"></button>
   </div>
 
   <div class="screens">
-    <!-- SLATE -->
     <section class="screen" id="screen-slate">
-      <div class="head">
-        <h2 id="slate-title">This week</h2>
-        <p class="sub" id="slate-sub">Pick a thing. Six seats each, $5 a seat, and the activity happens whether or not you know anyone there.</p>
-      </div>
+      <div id="urgent-slot"></div>
+      <div class="head"><h2 id="slate-title">This week</h2><p class="sub" id="slate-sub"></p></div>
       <div class="filters" id="filters" role="group" aria-label="Filter the slate">
         <button type="button" data-f="alcohol_free" aria-pressed="false">alcohol-free</button>
-        <button type="button" data-f="ends_by_9" aria-pressed="false">ends by 9pm</button>
-        <button type="button" data-f="quiet" aria-pressed="false">quiet venue</button>
+        <button type="button" data-f="ends_by_9" aria-pressed="false">ends by 9</button>
+        <button type="button" data-f="quiet" aria-pressed="false">quiet</button>
       </div>
-      <div id="slate-list" style="display:flex;flex-direction:column;gap:12px"></div>
-      <p class="foot">Filters are attributes of the activity, not facts about you. Nothing you switch on here is stored about you or shown to anyone.</p>
+      <div id="slate-list" class="stackv"></div>
+      <p class="foot">Filters describe the activity, not you. Nothing you switch on is stored about you or shown to anyone.</p>
     </section>
 
-    <!-- YOUR WEEK -->
     <section class="screen" id="screen-week" hidden>
-      <div class="head">
-        <h2>Your week</h2>
-        <p class="sub">Seats you've claimed, what they need from you, and the table once it's locked in.</p>
-      </div>
-      <div id="week-list" style="display:flex;flex-direction:column;gap:14px"></div>
+      <div class="head"><h2>Your week</h2><p class="sub">Everything you're booked into, and the one thing each needs from you next.</p></div>
+      <div id="week-stats"></div>
+      <div id="week-list" class="stackv"></div>
     </section>
 
-    <!-- YOU -->
     <section class="screen" id="screen-you" hidden>
-      <div class="head">
-        <h2>You</h2>
-        <p class="sub">Almost nothing is stored, and only your name reaches the table.</p>
-      </div>
-      <div id="you-body" style="display:flex;flex-direction:column;gap:14px"></div>
+      <div class="head"><h2>You</h2><p class="sub">Almost nothing is stored, and only your name reaches a table.</p></div>
+      <div id="you-body" class="stackv"></div>
     </section>
   </div>
 
   <nav class="tabbar" role="tablist" aria-label="Sections">
-    <button type="button" role="tab" id="tab-slate" aria-selected="true" data-tab="slate"><span>Slate</span></button>
-    <button type="button" role="tab" id="tab-week" aria-selected="false" data-tab="week"><span>Your week</span></button>
-    <button type="button" role="tab" id="tab-you" aria-selected="false" data-tab="you"><span>You</span></button>
+    <button type="button" role="tab" id="tab-slate" aria-selected="true" data-tab="slate"></button>
+    <button type="button" role="tab" id="tab-week" aria-selected="false" data-tab="week"></button>
+    <button type="button" role="tab" id="tab-you" aria-selected="false" data-tab="you"></button>
   </nav>
 </div>
 
-<div class="sheet-wrap" id="sheet-wrap" hidden>
-  <div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title"></div>
-</div>
+<div class="veil" id="veil" hidden><div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title"></div></div>
+<div class="celebrate" id="celebrate" hidden role="dialog" aria-modal="true" aria-labelledby="celebrate-title"></div>
+<div class="onb" id="onb" hidden role="dialog" aria-modal="true" aria-labelledby="onb-title"></div>
 
 <script>
 (function(){
 "use strict";
 
-/* ============================================================
-   Lobby — working prototype of the v0.2 spec.
-   Real shared state via the artifact db when it is granted;
-   an honest local-only mode when it is not.
-   ============================================================ */
+var CAP=6, FLOOR=4, PRICE=5;
+var CONFIRM_OPEN_H=36, CONFIRM_CLOSE_H=24, EVENT_LEN_H=3;
+var LS_ME="lobby.me.v1", LS_FILTERS="lobby.filters.v1", LS_LOCAL="lobby.localdb.v1",
+    LS_ONB="lobby.onb.v1", LS_SOUND="lobby.sound.v1";
 
-var CAP = 6, FLOOR = 4, PRICE = 5;
-var CONFIRM_OPEN_H = 36, CONFIRM_CLOSE_H = 24, EVENT_LEN_H = 3;
-var LS_ME = "lobby.me.v1", LS_FILTERS = "lobby.filters.v1", LS_LOCAL = "lobby.localdb.v1";
-
-var ICEBREAKERS = [
-  "Quick one before Thursday: the class you will not shut up about?",
-  "Ranked, no notes — pizza toppings, Mario Kart characters, or study playlists. Pick a category, commit to an opinion.",
+var ICEBREAKERS=[
+  "Before Thursday: the class you will not shut up about?",
+  "Ranked, no notes — pizza toppings, Mario Kart characters, or study playlists. Pick one, commit to an opinion.",
   "What's the most niche thing you're unreasonably good at?",
-  "Two truths and a course you regret. Go."
+  "Two truths and a module you regret. Go."
 ];
 
-var state = {
-  ready:false, mode:"connecting", me:null,
-  activities:[], seats:{}, chats:{}, signals:{}, checkins:{}, students:{},
-  clockOffset:0, filters:{}, tab:"slate", openSheet:null
-};
+var state={ready:false,mode:"connecting",me:null,activities:[],seats:{},chats:{},signals:{},
+  students:{},clockOffset:0,filters:{},tab:"slate",sound:true,seenSeats:{}};
 
-/* ---------- tiny utils ---------- */
-function $(id){ return document.getElementById(id); }
-function el(tag, cls, txt){ var n=document.createElement(tag); if(cls)n.className=cls; if(txt!=null)n.textContent=txt; return n; }
-function esc(s){ return String(s==null?"":s); }
-function uid(p){ return (p||"") + Math.random().toString(36).slice(2,9) + Date.now().toString(36).slice(-4); }
-function lsGet(k,d){ try{ var v=localStorage.getItem(k); return v?JSON.parse(v):d; }catch(e){ return d; } }
-function lsSet(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} }
-function sleep(ms){ return new Promise(function(r){ setTimeout(r,ms); }); }
-function initials(n){ n=(n||"?").trim(); var p=n.split(/\s+/); return ((p[0]||"?")[0] + (p[1]?p[1][0]:"")).toUpperCase(); }
+/* ---------- utils ---------- */
+function $(id){return document.getElementById(id);}
+function el(t,c,x){var n=document.createElement(t);if(c)n.className=c;if(x!=null)n.textContent=x;return n;}
+function uid(p){return (p||"")+Math.random().toString(36).slice(2,9)+Date.now().toString(36).slice(-4);}
+function lsGet(k,d){try{var v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch(e){return d;}}
+function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
+function sleep(ms){return new Promise(function(r){setTimeout(r,ms);});}
+function initials(n){n=(n||"?").trim();var p=n.split(/\s+/);return ((p[0]||"?")[0]+(p[1]?p[1][0]:"")).toUpperCase();}
+function reduced(){try{return window.matchMedia("(prefers-reduced-motion: reduce)").matches;}catch(e){return false;}}
 
 var toastTimer=null;
-function toast(msg, bad){
-  var old=document.querySelector(".toast"); if(old) old.remove();
-  var t=el("div","toast"+(bad?" bad":""),msg);
-  document.body.appendChild(t);
-  clearTimeout(toastTimer);
-  toastTimer=setTimeout(function(){ if(t.parentNode) t.remove(); }, 4200);
+function toast(msg,bad){
+  var o=document.querySelector(".toast"); if(o)o.remove();
+  var t=el("div","toast"+(bad?" bad":""),msg); document.body.appendChild(t);
+  clearTimeout(toastTimer); toastTimer=setTimeout(function(){if(t.parentNode)t.remove();},4000);
 }
 function dbFail(e){
-  var code = e && e.code ? e.code : "unknown";
-  if(code==="revoked" || code==="not_granted") return "Lost access to shared data. Reload the page to try again.";
-  if(code==="quota_exceeded") return "This prototype's database is full. Clear old activities in the demo panel.";
-  if(code==="resource_exhausted") return "Too many requests at once. Wait a few seconds and try again.";
-  if(code==="invalid_argument") return "That request was malformed and was not saved.";
-  return "Couldn't reach shared storage. Your change was not saved.";
+  var c=e&&e.code?e.code:"unknown";
+  if(c==="revoked"||c==="not_granted") return "Lost access to shared data. Reload to try again.";
+  if(c==="quota_exceeded") return "This prototype's database is full.";
+  if(c==="resource_exhausted") return "Too many requests at once — wait a moment.";
+  if(c==="invalid_argument") return "That request was malformed and wasn't saved.";
+  return "Couldn't reach shared storage. Your change wasn't saved.";
 }
 
-/* ---------- time ---------- */
-function now(){ return Date.now() + state.clockOffset; }
-function ts(a){ return new Date(a.startsAt).getTime(); }
-function confirmOpensAt(a){ return ts(a) - CONFIRM_OPEN_H*3600e3; }
-function confirmClosesAt(a){ return ts(a) - CONFIRM_CLOSE_H*3600e3; }
-function endsAt(a){ return ts(a) + EVENT_LEN_H*3600e3; }
-
-function phaseOf(a){
-  var t=now();
-  if(t < confirmOpensAt(a)) return "open";
-  if(t < confirmClosesAt(a)) return "confirming";
-  if(t < ts(a)) return "locked";
-  if(t < endsAt(a)) return "running";
-  return "done";
-}
-function fmtWhen(a){
-  var d=new Date(a.startsAt);
-  var days=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
-  var h=d.getHours(), m=d.getMinutes();
-  return days[d.getDay()] + " " + (h<10?"0":"") + h + ":" + (m<10?"0":"") + m;
-}
-function fmtLeft(msLeft){
-  if(msLeft<=0) return "now";
-  var h=Math.floor(msLeft/3600e3), m=Math.floor((msLeft%3600e3)/60e3);
-  if(h>=48) return Math.floor(h/24)+"d";
-  if(h>=1) return h+"h " + (m<10?"0":"") + m+"m";
-  return m+"m";
+/* ---------- sound ---------- */
+var actx=null;
+function ding(kind){
+  if(!state.sound) return;
+  try{
+    if(!actx) actx=new (window.AudioContext||window.webkitAudioContext)();
+    if(actx.state==="suspended") actx.resume();
+    var notes = kind==="big" ? [523.25,659.25,783.99] : [587.33,880];
+    notes.forEach(function(f,i){
+      var o=actx.createOscillator(), g=actx.createGain();
+      o.type="sine"; o.frequency.value=f;
+      var t0=actx.currentTime+i*0.075;
+      g.gain.setValueAtTime(0.0001,t0);
+      g.gain.exponentialRampToValueAtTime(0.10,t0+0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001,t0+0.30);
+      o.connect(g); g.connect(actx.destination); o.start(t0); o.stop(t0+0.32);
+    });
+  }catch(e){}
 }
 
-/* ---------- store: db capability, or honest local fallback ---------- */
-var localEmitter = { subs:[] };
-function localData(){ return lsGet(LS_LOCAL, {}); }
-function localWrite(map){ lsSet(LS_LOCAL, map); localEmitter.subs.forEach(function(f){ try{f();}catch(e){} }); }
-
-function makeLocalStore(){
-  function docRef(path){
-    return {
-      path:path,
-      get:function(){
-        var m=localData();
-        return Promise.resolve({ id:path.split("/").pop(), exists:Object.prototype.hasOwnProperty.call(m,path), data:function(){ return m[path]; } });
-      },
-      set:function(body){ var m=localData(); m[path]=JSON.parse(JSON.stringify(body)); localWrite(m); return Promise.resolve(); },
-      update:function(body){
-        var m=localData();
-        if(!Object.prototype.hasOwnProperty.call(m,path)) return Promise.reject({code:"invalid_argument",message:"no such document"});
-        Object.keys(body).forEach(function(k){ m[path][k]=body[k]; }); localWrite(m); return Promise.resolve();
-      },
-      "delete":function(){ var m=localData(); delete m[path]; localWrite(m); return Promise.resolve(); },
-      acquire:function(){ return Promise.resolve({acquired:true}); },
-      onSnapshot:function(next){
-        var fire=function(){ var m=localData(); next({ id:path.split("/").pop(), exists:Object.prototype.hasOwnProperty.call(m,path), data:function(){ return m[path]; } }); };
-        localEmitter.subs.push(fire); fire();
-        return function(){ var i=localEmitter.subs.indexOf(fire); if(i>=0) localEmitter.subs.splice(i,1); };
-      }
-    };
-  }
-  function collRef(path){
-    function matches(){
-      var m=localData(), out=[];
-      Object.keys(m).forEach(function(k){
-        if(k.indexOf(path+"/")===0 && k.slice(path.length+1).indexOf("/")===-1){
-          out.push({ id:k.split("/").pop(), exists:true, data:(function(b){ return function(){ return b; }; })(m[k]) });
-        }
-      });
-      out.sort(function(a,b){ return a.id<b.id?-1:1; });
-      return out;
-    }
-    return {
-      path:path,
-      doc:function(id){ return docRef(path+"/"+(id||uid("d"))); },
-      get:function(){ var d=matches(); return Promise.resolve({docs:d,size:d.length,empty:!d.length}); },
-      onSnapshot:function(next){
-        var fire=function(){ var d=matches(); next({docs:d,size:d.length,empty:!d.length}); };
-        localEmitter.subs.push(fire); fire();
-        return function(){ var i=localEmitter.subs.indexOf(fire); if(i>=0) localEmitter.subs.splice(i,1); };
-      }
-    };
-  }
-  return { doc:docRef, collection:collRef, isLocal:true };
-}
-
-var store = null, isLocalStore = false;
-
-/* ---------- paths ---------- */
-function actDoc(id){ return store.doc("activities/"+id); }
-function actColl(){ return store.collection("activities"); }
-function seatColl(id){ return store.collection("activities/"+id+"/seats"); }
-function seatDoc(id,n){ return store.doc("activities/"+id+"/seats/s"+n); }
-function chatDoc(id){ return store.doc("activities/"+id+"/chat/log"); }
-function signalColl(id){ return store.collection("activities/"+id+"/signals"); }
-function signalDoc(id,sid){ return store.doc("activities/"+id+"/signals/"+sid); }
-function studentDoc(sid){ return store.doc("students/"+sid); }
-function clockDoc(){ return store.doc("meta/clock"); }
-
-/* ---------- derived ---------- */
-function seatsOf(id){ return state.seats[id] || []; }
-function takenSeats(id){ return seatsOf(id).filter(function(s){ return s && s.studentId; }); }
-function confirmedSeats(id){ return takenSeats(id).filter(function(s){ return s.confirmed; }); }
-function mySeat(id){ if(!state.me) return null; var m=takenSeats(id).filter(function(s){ return s.studentId===state.me.id; }); return m[0]||null; }
-function hostOf(id){
-  var c=confirmedSeats(id).slice().sort(function(a,b){ return (a.claimedAt||0)-(b.claimedAt||0); });
-  return c[0]||null;
-}
-function isCancelled(a){
-  var ph=phaseOf(a);
-  if(ph==="open"||ph==="confirming") return false;
-  if(a.kind!=="booked") return false;
-  return confirmedSeats(a.id).length < FLOOR;
-}
-function tableOpen(a){
-  var ph=phaseOf(a);
-  return (ph==="locked"||ph==="running"||ph==="done") && !isCancelled(a);
-}
-function myActivities(){
-  if(!state.me) return [];
-  return state.activities.filter(function(a){ return !!mySeat(a.id); })
-    .sort(function(x,y){ return ts(x)-ts(y); });
-}
-
-/* ---------- seat table figure ---------- */
-function tableFigure(actId, size){
-  var w = size||120, h = Math.round(w*0.66);
-  var svg = document.createElementNS("http://www.w3.org/2000/svg","svg");
-  svg.setAttribute("viewBox","0 0 120 80");
-  svg.setAttribute("width", String(w)); svg.setAttribute("height", String(h));
-  svg.setAttribute("class","tablefig"); svg.setAttribute("role","img");
-  var taken = takenSeats(actId);
-  var me = state.me;
-  svg.setAttribute("aria-label", taken.length + " of " + CAP + " seats taken");
-  var e=document.createElementNS("http://www.w3.org/2000/svg","ellipse");
-  e.setAttribute("cx","60"); e.setAttribute("cy","40"); e.setAttribute("rx","26"); e.setAttribute("ry","15");
-  e.setAttribute("class","surface"); svg.appendChild(e);
-  var byNo = {}; taken.forEach(function(s){ byNo[s.seatNo]=s; });
-  for(var i=0;i<CAP;i++){
-    var ang = (Math.PI*2*i/CAP) - Math.PI/2;
-    var cx = 60 + Math.cos(ang)*42, cy = 40 + Math.sin(ang)*30;
-    var c=document.createElementNS("http://www.w3.org/2000/svg","circle");
-    c.setAttribute("cx",cx.toFixed(1)); c.setAttribute("cy",cy.toFixed(1)); c.setAttribute("r","7");
-    var s = byNo[i+1];
-    c.setAttribute("class", !s ? "seat-empty" : (me && s.studentId===me.id ? "seat-me" : "seat-taken"));
-    svg.appendChild(c);
-  }
+/* ---------- icons ---------- */
+function icon(name,size){
+  var s=size||24, ns="http://www.w3.org/2000/svg";
+  var svg=document.createElementNS(ns,"svg");
+  svg.setAttribute("viewBox","0 0 24 24"); svg.setAttribute("width",String(s)); svg.setAttribute("height",String(s));
+  svg.setAttribute("fill","none"); svg.setAttribute("stroke","currentColor");
+  svg.setAttribute("stroke-width","2"); svg.setAttribute("stroke-linecap","round");
+  svg.setAttribute("stroke-linejoin","round"); svg.setAttribute("aria-hidden","true");
+  var paths={
+    slate:["M4 6h16","M4 12h16","M4 18h10"],
+    seat:["M6 18v-5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v5","M5 18h14","M8 11V7a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v4"],
+    you:["M12 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z","M5 20a7 7 0 0 1 14 0"],
+    flame:["M12 3c3 3.5 4.5 5.8 4.5 8.2A4.5 4.5 0 0 1 12 16a4.5 4.5 0 0 1-4.5-4.8C7.5 8.8 9 6.5 12 3Z"],
+    tick:["M4.5 12.5l5 5 10-11"],
+    clock:["M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z","M12 7v5l3 2"]
+  };
+  (paths[name]||[]).forEach(function(d){
+    var p=document.createElementNS(ns,"path"); p.setAttribute("d",d); svg.appendChild(p);
+  });
   return svg;
 }
 
-/* ============================================================
-   Writes
-   ============================================================ */
-async function claimSeat(a){
-  if(!state.me) { openJoinSheet(a); return; }
-  if(mySeat(a.id)){ toast("You already have a seat here."); return; }
-  if(takenSeats(a.id).length >= CAP){ toast("That one filled up while you were looking."); return; }
-  for(var n=1;n<=CAP;n++){
-    var ref = seatDoc(a.id,n);
-    try{
-      var lease = await ref.acquire({ holder: state.me.id, ttlMs: 4000 });
-      if(!lease.acquired) continue;
-      var snap = await ref.get();
-      var body = snap.exists ? snap.data() : null;
-      if(body && body.studentId) continue;
-      await ref.set({ seatNo:n, studentId:state.me.id, name:state.me.name, claimedAt:Date.now(), confirmed:false, paid:PRICE });
-      toast("Seat " + n + " is yours. $5 charged (simulated).");
-      render();
-      return;
-    }catch(e){ toast(dbFail(e), true); return; }
+/* ---------- time ---------- */
+function now(){return Date.now()+state.clockOffset;}
+function ts(a){return new Date(a.startsAt).getTime();}
+function confirmOpensAt(a){return ts(a)-CONFIRM_OPEN_H*3600e3;}
+function confirmClosesAt(a){return ts(a)-CONFIRM_CLOSE_H*3600e3;}
+function endsAt(a){return ts(a)+EVENT_LEN_H*3600e3;}
+function phaseOf(a){
+  var t=now();
+  if(t<confirmOpensAt(a))return "open";
+  if(t<confirmClosesAt(a))return "confirming";
+  if(t<ts(a))return "locked";
+  if(t<endsAt(a))return "running";
+  return "done";
+}
+function fmtWhen(a){
+  var d=new Date(a.startsAt), days=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+  var h=d.getHours(),m=d.getMinutes();
+  return days[d.getDay()]+" "+(h<10?"0":"")+h+":"+(m<10?"0":"")+m;
+}
+function fmtLeft(ms){
+  if(ms<=0)return "now";
+  var h=Math.floor(ms/3600e3), m=Math.floor((ms%3600e3)/60e3);
+  if(h>=48)return Math.floor(h/24)+" days";
+  if(h>=1)return h+"h "+(m<10?"0":"")+m+"m";
+  return m+" min";
+}
+
+/* ---------- store ---------- */
+var localSubs=[];
+function localData(){return lsGet(LS_LOCAL,{});}
+function localWrite(m){lsSet(LS_LOCAL,m);localSubs.forEach(function(f){try{f();}catch(e){}});}
+function makeLocalStore(){
+  function docRef(path){
+    return {path:path,
+      get:function(){var m=localData();return Promise.resolve({id:path.split("/").pop(),
+        exists:Object.prototype.hasOwnProperty.call(m,path),data:function(){return m[path];}});},
+      set:function(b){var m=localData();m[path]=JSON.parse(JSON.stringify(b));localWrite(m);return Promise.resolve();},
+      update:function(b){var m=localData();if(!Object.prototype.hasOwnProperty.call(m,path))
+        return Promise.reject({code:"invalid_argument",message:"no such document"});
+        Object.keys(b).forEach(function(k){m[path][k]=b[k];});localWrite(m);return Promise.resolve();},
+      "delete":function(){var m=localData();delete m[path];localWrite(m);return Promise.resolve();},
+      acquire:function(){return Promise.resolve({acquired:true});},
+      onSnapshot:function(next){
+        var fire=function(){var m=localData();next({id:path.split("/").pop(),
+          exists:Object.prototype.hasOwnProperty.call(m,path),data:function(){return m[path];}});};
+        localSubs.push(fire);fire();
+        return function(){var i=localSubs.indexOf(fire);if(i>=0)localSubs.splice(i,1);};}
+    };
   }
-  toast("Every seat is taken. Join the waitlist next build.", true);
+  function collRef(path){
+    function match(){var m=localData(),out=[];
+      Object.keys(m).forEach(function(k){
+        if(k.indexOf(path+"/")===0&&k.slice(path.length+1).indexOf("/")===-1)
+          out.push({id:k.split("/").pop(),exists:true,data:(function(b){return function(){return b;};})(m[k])});
+      });out.sort(function(a,b){return a.id<b.id?-1:1;});return out;}
+    return {path:path,
+      doc:function(id){return docRef(path+"/"+(id||uid("d")));},
+      get:function(){var d=match();return Promise.resolve({docs:d,size:d.length,empty:!d.length});},
+      onSnapshot:function(next){
+        var fire=function(){var d=match();next({docs:d,size:d.length,empty:!d.length});};
+        localSubs.push(fire);fire();
+        return function(){var i=localSubs.indexOf(fire);if(i>=0)localSubs.splice(i,1);};}
+    };
+  }
+  return {doc:docRef,collection:collRef};
+}
+var store=null, isLocalStore=false;
+
+function actColl(){return store.collection("activities");}
+function seatColl(id){return store.collection("activities/"+id+"/seats");}
+function seatDoc(id,n){return store.doc("activities/"+id+"/seats/s"+n);}
+function chatDoc(id){return store.doc("activities/"+id+"/chat/log");}
+function signalColl(id){return store.collection("activities/"+id+"/signals");}
+function signalDoc(id,sid){return store.doc("activities/"+id+"/signals/"+sid);}
+function studentDoc(sid){return store.doc("students/"+sid);}
+function clockDoc(){return store.doc("meta/clock");}
+
+/* ---------- derived ---------- */
+function seatsOf(id){return state.seats[id]||[];}
+function takenSeats(id){return seatsOf(id).filter(function(s){return s&&s.studentId;});}
+function confirmedSeats(id){return takenSeats(id).filter(function(s){return s.confirmed;});}
+function mySeat(id){if(!state.me)return null;
+  var m=takenSeats(id).filter(function(s){return s.studentId===state.me.id;});return m[0]||null;}
+function hostOf(id){
+  var c=confirmedSeats(id).slice().sort(function(a,b){return (a.claimedAt||0)-(b.claimedAt||0);});
+  return c[0]||null;}
+function isCancelled(a){
+  var p=phaseOf(a);
+  if(p==="open"||p==="confirming")return false;
+  if(a.kind!=="booked")return false;
+  return confirmedSeats(a.id).length<FLOOR;}
+function tableOpen(a){var p=phaseOf(a);
+  return (p==="locked"||p==="running"||p==="done")&&!isCancelled(a);}
+function myActivities(){
+  if(!state.me)return [];
+  return state.activities.filter(function(a){return !!mySeat(a.id);})
+    .sort(function(x,y){return ts(x)-ts(y);});}
+function myCheckin(a){return (state.signals[a.id]||{})[(state.me?state.me.id:"")+"__checkin"];}
+function mySignal(a){return (state.signals[a.id]||{})[state.me?state.me.id:""];}
+
+function stats(){
+  var attended=[],met={};
+  if(state.me) state.activities.forEach(function(a){
+    var ci=myCheckin(a);
+    if(ci&&ci.madeIt){ attended.push(a);
+      confirmedSeats(a.id).forEach(function(s){ if(s.studentId!==state.me.id) met[s.studentId]=1; }); }
+  });
+  var weeks={};
+  attended.forEach(function(a){ var d=new Date(a.startsAt);
+    var k=d.getFullYear()+"-"+Math.floor((d.getTime()-new Date(d.getFullYear(),0,1).getTime())/6048e5);
+    weeks[k]=1; });
+  return {tables:attended.length, people:Object.keys(met).length, streak:Object.keys(weeks).length};
 }
 
+/* ---------- table figure ---------- */
+function tableFigure(actId,size,animate){
+  var ns="http://www.w3.org/2000/svg", w=size||110;
+  var svg=document.createElementNS(ns,"svg");
+  svg.setAttribute("viewBox","0 0 120 84"); svg.setAttribute("width",String(w));
+  svg.setAttribute("height",String(Math.round(w*0.7))); svg.setAttribute("class","tablefig");
+  svg.setAttribute("role","img");
+  var taken=takenSeats(actId), me=state.me;
+  svg.setAttribute("aria-label",taken.length+" of "+CAP+" seats taken");
+  var e=document.createElementNS(ns,"ellipse");
+  e.setAttribute("cx","60");e.setAttribute("cy","42");e.setAttribute("rx","25");e.setAttribute("ry","15");
+  e.setAttribute("class","surface");svg.appendChild(e);
+  var byNo={}; taken.forEach(function(s){byNo[s.seatNo]=s;});
+  var seen=state.seenSeats[actId]||{};
+  for(var i=0;i<CAP;i++){
+    var ang=(Math.PI*2*i/CAP)-Math.PI/2;
+    var cx=60+Math.cos(ang)*43, cy=42+Math.sin(ang)*31;
+    var c=document.createElementNS(ns,"circle");
+    c.setAttribute("cx",cx.toFixed(1));c.setAttribute("cy",cy.toFixed(1));c.setAttribute("r","7.5");
+    var s=byNo[i+1];
+    c.setAttribute("class",!s?"seat-empty":(me&&s.studentId===me.id?"seat-me":"seat-taken"));
+    if(s&&animate&&!seen[i+1]&&!reduced()){
+      c.classList.add("pop");
+      c.style.transformOrigin=cx.toFixed(1)+"px "+cy.toFixed(1)+"px";
+      c.style.animationDelay=(i*0.05)+"s";
+    }
+    svg.appendChild(c);
+  }
+  if(animate){ var mark={}; taken.forEach(function(s){mark[s.seatNo]=1;}); state.seenSeats[actId]=mark; }
+  return svg;
+}
+
+/* ============================================================ writes */
+async function claimSeat(a){
+  if(!state.me){openJoinSheet(a);return;}
+  if(mySeat(a.id)){toast("You already have a seat here.");return;}
+  if(takenSeats(a.id).length>=CAP){toast("That filled up while you were looking.",true);return;}
+  for(var n=1;n<=CAP;n++){
+    var ref=seatDoc(a.id,n);
+    try{
+      var lease=await ref.acquire({holder:state.me.id,ttlMs:4000});
+      if(!lease.acquired)continue;
+      var snap=await ref.get();
+      var body=snap.exists?snap.data():null;
+      if(body&&body.studentId)continue;
+      await ref.set({seatNo:n,studentId:state.me.id,name:state.me.name,claimedAt:Date.now(),confirmed:false,paid:PRICE});
+      ding("big");
+      celebrateClaim(a,n);
+      return;
+    }catch(e){toast(dbFail(e),true);return;}
+  }
+  toast("Every seat is taken.",true);
+}
 async function leaveSeat(a){
-  var s=mySeat(a.id); if(!s) return;
-  try{
-    await seatDoc(a.id, s.seatNo)["delete"]();
-    toast("Seat released. No refund after the confirm window — that's the point of it.");
-    render();
-  }catch(e){ toast(dbFail(e), true); }
+  var s=mySeat(a.id); if(!s)return;
+  if(!confirm("Give up your seat at "+a.title+"?\n\nIt goes back to the slate straight away. The $5 only comes back if the whole event cancels."))return;
+  try{ await seatDoc(a.id,s.seatNo)["delete"](); toast("Seat released."); render(); }
+  catch(e){toast(dbFail(e),true);}
 }
-
 async function confirmSeat(a){
-  var s=mySeat(a.id); if(!s) return;
+  var s=mySeat(a.id); if(!s)return;
   try{
-    await seatDoc(a.id, s.seatNo).update({ confirmed:true, confirmedAt:Date.now() });
-    toast("Confirmed. The chat opens when the window closes.");
-    render();
-  }catch(e){ toast(dbFail(e), true); }
+    await seatDoc(a.id,s.seatNo).update({confirmed:true,confirmedAt:Date.now()});
+    ding("big"); celebrateConfirm(a);
+  }catch(e){toast(dbFail(e),true);}
 }
-
-async function postMessage(actId, msg){
+async function postMessage(actId,msg){
   var ref=chatDoc(actId);
   for(var i=0;i<4;i++){
     try{
-      var lease = await ref.acquire({ holder: state.me ? state.me.id : "anon", ttlMs: 3000 });
-      if(!lease.acquired){ await sleep(200 + Math.random()*300); continue; }
-      var snap = await ref.get();
-      var msgs = (snap.exists && snap.data().messages) ? snap.data().messages.slice() : [];
-      if(msg.kind==="bot" && msgs.some(function(m){ return m.kind==="bot"; })) return true;
+      var lease=await ref.acquire({holder:state.me?state.me.id:"anon",ttlMs:3000});
+      if(!lease.acquired){await sleep(200+Math.random()*300);continue;}
+      var snap=await ref.get();
+      var msgs=(snap.exists&&snap.data().messages)?snap.data().messages.slice():[];
+      if(msg.kind==="bot"&&msgs.some(function(m){return m.kind==="bot";}))return true;
       msgs.push(msg);
-      await ref.set({ messages: msgs.slice(-150) });
+      await ref.set({messages:msgs.slice(-150)});
       return true;
-    }catch(e){ toast(dbFail(e), true); return false; }
+    }catch(e){toast(dbFail(e),true);return false;}
   }
-  toast("The chat was busy. Try sending that again.", true);
-  return false;
+  toast("The chat was busy — send that again.",true); return false;
 }
-
+function hash(s){var h=0;for(var i=0;i<s.length;i++){h=((h<<5)-h)+s.charCodeAt(i);h|=0;}return h;}
 async function maybePostBot(a){
-  if(!tableOpen(a)) return;
-  var chat = state.chats[a.id];
-  if(chat && chat.some(function(m){ return m.kind==="bot"; })) return;
-  var host = hostOf(a.id);
-  if(!host) return;
-  var pick = ICEBREAKERS[Math.abs(hash(a.id)) % ICEBREAKERS.length];
-  var text = a.title + ", " + fmtWhen(a) + ", " + a.venue + ". "
-    + confirmedSeats(a.id).length + " of you confirmed. "
-    + host.name + " is hosting — they'll post when they arrive and where they're sitting.";
-  await postMessage(a.id, { id:uid("m"), kind:"bot", by:"bot", name:"Lobby", text:text, at:Date.now() });
-  await postMessage(a.id, { id:uid("m"), kind:"bot", by:"bot", name:"Lobby", text:pick, at:Date.now()+1 });
+  if(!tableOpen(a))return;
+  var c=state.chats[a.id];
+  if(c&&c.some(function(m){return m.kind==="bot";}))return;
+  var host=hostOf(a.id); if(!host)return;
+  var pick=ICEBREAKERS[Math.abs(hash(a.id))%ICEBREAKERS.length];
+  await postMessage(a.id,{id:uid("m"),kind:"bot",by:"bot",name:"Lobby",
+    text:a.title+", "+fmtWhen(a)+", "+a.venue+". "+confirmedSeats(a.id).length+
+      " of you confirmed. "+host.name+" is hosting — they'll post when they arrive and where they're sitting.",
+    at:Date.now()});
+  await postMessage(a.id,{id:uid("m"),kind:"bot",by:"bot",name:"Lobby",text:pick,at:Date.now()+1});
 }
-function hash(s){ var h=0; for(var i=0;i<s.length;i++){ h=((h<<5)-h)+s.charCodeAt(i); h|=0; } return h; }
-
-async function saveCheckin(a, madeIt, note){
+async function saveCheckin(a,madeIt,note){
   try{
-    await signalDoc(a.id, state.me.id + "__checkin").set({ studentId:state.me.id, madeIt:!!madeIt, note:note||"", at:Date.now(), kind:"checkin" });
-    if(note && note.trim()) toast("Sent to a moderator. Someone reads this tonight, not Monday.");
-    else toast("Thanks — noted.");
+    await signalDoc(a.id,state.me.id+"__checkin").set({studentId:state.me.id,madeIt:!!madeIt,
+      note:note||"",at:Date.now(),kind:"checkin"});
+    if(note&&note.trim())toast("Sent to a moderator — someone reads that tonight.");
     render();
-  }catch(e){ toast(dbFail(e), true); }
+  }catch(e){toast(dbFail(e),true);}
 }
-
-async function saveSignal(a, friends, romantic){
+async function saveSignal(a,friends,romantic){
   try{
-    await signalDoc(a.id, state.me.id).set({
-      studentId:state.me.id, friends:friends, romantic:romantic, at:Date.now(), kind:"signal"
-    });
-    toast("Saved. Nobody is told anything unless it's mutual.");
-    render();
-  }catch(e){ toast(dbFail(e), true); }
+    await signalDoc(a.id,state.me.id).set({studentId:state.me.id,friends:friends,romantic:romantic,
+      at:Date.now(),kind:"signal"});
+    closeSheet();
+    setTimeout(function(){ celebrateSignal(a); },160);
+  }catch(e){toast(dbFail(e),true);}
 }
-
-async function blockPerson(a, seat){
-  if(!confirm("Block " + seat.name + "?\n\nThey lose their seat at this event immediately and are frozen out of everything upcoming. They are not told who did this.")) return;
+async function blockPerson(a,seat){
+  if(!confirm("Block "+seat.name+"?\n\nThey lose their seat at this event immediately — not next week's — and are frozen out of everything upcoming. They're never told who did it."))return;
   try{
-    await seatDoc(a.id, seat.seatNo)["delete"]();
-    await store.doc("blocks/" + state.me.id + "__" + seat.studentId).set({ by:state.me.id, target:seat.studentId, actId:a.id, at:Date.now() });
-    toast("Done, and it took effect on this event — not next week's.");
-    render();
-  }catch(e){ toast(dbFail(e), true); }
+    await seatDoc(a.id,seat.seatNo)["delete"]();
+    await store.doc("blocks/"+state.me.id+"__"+seat.studentId)
+      .set({by:state.me.id,target:seat.studentId,actId:a.id,at:Date.now()});
+    toast("Done, and it took effect on this event.");
+    closeSheet(); render();
+  }catch(e){toast(dbFail(e),true);}
 }
 
-/* ============================================================
-   Identity
-   ============================================================ */
+/* ---------- identity ---------- */
 function ageFrom(dob){
-  var d=new Date(dob); if(isNaN(d)) return null;
-  var t=new Date(), age=t.getFullYear()-d.getFullYear();
-  var m=t.getMonth()-d.getMonth();
-  if(m<0 || (m===0 && t.getDate()<d.getDate())) age--;
-  return age;
+  var d=new Date(dob); if(isNaN(d))return null;
+  var t=new Date(),a=t.getFullYear()-d.getFullYear(),m=t.getMonth()-d.getMonth();
+  if(m<0||(m===0&&t.getDate()<d.getDate()))a--;
+  return a;
 }
-async function createMe(name, dob, intent){
-  var me = { id: uid("u"), name:name.trim(), intent:intent, joinedAt:Date.now() };
-  state.me = me; lsSet(LS_ME, me);
-  try{ await studentDoc(me.id).set({ id:me.id, name:me.name, intent:me.intent, adult:true, joinedAt:me.joinedAt }); }
-  catch(e){ /* identity still works locally */ }
+async function createMe(name,dob,intent){
+  var me={id:uid("u"),name:name.trim(),intent:intent,joinedAt:Date.now()};
+  state.me=me; lsSet(LS_ME,me);
+  try{await studentDoc(me.id).set({id:me.id,name:me.name,intent:me.intent,adult:true,joinedAt:me.joinedAt});}catch(e){}
   return me;
 }
 
-/* ============================================================
-   Rendering
-   ============================================================ */
-function render(){
-  renderWho();
-  if(state.tab==="slate") renderSlate();
-  if(state.tab==="week") renderWeek();
-  if(state.tab==="you") renderYou();
-  renderTabDot();
+/* ============================================================ celebrations */
+function sparks(host){
+  if(reduced())return;
+  var cols=["var(--green)","var(--gold)","var(--clay)"];
+  for(var i=0;i<16;i++){
+    var s=el("span","spark pop-in");
+    var ang=Math.random()*Math.PI*2, dist=70+Math.random()*110;
+    s.style.setProperty("--dx",(Math.cos(ang)*dist).toFixed(0)+"px");
+    s.style.setProperty("--dy",(Math.sin(ang)*dist).toFixed(0)+"px");
+    s.style.background=cols[i%3];
+    s.style.left="50%"; s.style.top="34%";
+    s.style.animationDelay=(Math.random()*0.14)+"s";
+    host.appendChild(s);
+  }
 }
-function renderWho(){
-  var w=$("who");
-  if(!state.me){ w.textContent = "not signed in"; return; }
-  w.textContent = state.me.name;
+function showCelebrate(build){
+  var c=$("celebrate"); c.innerHTML=""; build(c); c.hidden=false;
+  sparks(c);
+  var b=c.querySelector("button"); if(b)b.focus();
 }
-function renderTabDot(){
-  var needs = myActivities().some(function(a){
-    var ph=phaseOf(a), s=mySeat(a.id);
-    if(ph==="confirming" && s && !s.confirmed) return true;
-    if(ph==="done" && !hasSignalled(a)) return true;
-    return false;
+function closeCelebrate(){ $("celebrate").hidden=true; render(); }
+
+function celebrateBase(c,artActId,title,body,actions){
+  var art=el("div","art");
+  art.appendChild(tableFigure(artActId,190,false));
+  c.appendChild(art);
+  var h=el("h2",null,title); h.id="celebrate-title"; c.appendChild(h);
+  c.appendChild(el("p",null,body));
+  var box=el("div","actions");
+  actions.forEach(function(a){
+    var b=el("button",a.cls||"btn",a.label); b.type="button";
+    b.addEventListener("click",a.fn); box.appendChild(b);
   });
-  var tab=$("tab-week");
-  var existing=tab.querySelector(".dot");
-  if(needs && !existing){ var d=el("span","dot"); tab.insertBefore(d, tab.firstChild); }
-  if(!needs && existing) existing.remove();
+  c.appendChild(box);
 }
-function hasSignalled(a){
-  var sig=state.signals[a.id]||{};
-  return !!sig[state.me && state.me.id];
+function celebrateClaim(a,n){
+  showCelebrate(function(c){
+    var opens=confirmOpensAt(a)-now();
+    var next = opens>0 ? "We'll nudge you in "+fmtLeft(opens)+" to confirm. One tap then and you're locked in."
+                       : "Confirm it now and you're locked in.";
+    celebrateBase(c,a.id,"Seat "+n+" is yours",
+      a.title+", "+fmtWhen(a)+". "+next,
+      [{label:"Got it",fn:function(){closeCelebrate();switchTab("week");}}]);
+  });
+}
+function celebrateConfirm(a){
+  showCelebrate(function(c){
+    var conf=confirmedSeats(a.id).length;
+    var body = a.kind==="booked"
+      ? conf+" of "+takenSeats(a.id).length+" confirmed. This one needs "+FLOOR+" or it cancels and refunds — you'll know a day early either way."
+      : conf+" confirmed so far. This one's drop-in, so it runs regardless.";
+    celebrateBase(c,a.id,"You're in",body,[{label:"Nice",fn:closeCelebrate}]);
+  });
+}
+function celebrateSignal(a){
+  var sigs=state.signals[a.id]||{}, mine=sigs[state.me.id];
+  var fm=[],rm=[];
+  takenSeats(a.id).forEach(function(s){
+    if(s.studentId===state.me.id)return;
+    var th=sigs[s.studentId]; if(!th)return;
+    if((mine.friends||[]).indexOf(s.studentId)>=0&&(th.friends||[]).indexOf(state.me.id)>=0)fm.push(s.name);
+    if((mine.romantic||[]).indexOf(s.studentId)>=0&&(th.romantic||[]).indexOf(state.me.id)>=0)rm.push(s.name);
+  });
+  if(rm.length) ding("big"); else if(fm.length) ding();
+  showCelebrate(function(c){
+    var title, body;
+    if(rm.length){ title="Mutual"; body=rm.join(" and ")+" picked you back. Whatever you do next, do it somewhere public and tell a friend where you're going — that part happens off the app."; }
+    else if(fm.length){ title="You've got people"; body=fm.join(", ")+" want to do something again too. The chat stays open."; }
+    else { title="Saved"; body="Nothing mutual this time — and nobody is ever told they weren't picked, including you just now. It stays silent both ways."; }
+    celebrateBase(c,a.id,title,body,[{label:"Done",fn:closeCelebrate}]);
+  });
+}
+
+/* ============================================================ render */
+function render(){
+  renderStreak(); renderTabs();
+  if(state.tab==="slate")renderSlate();
+  if(state.tab==="week")renderWeek();
+  if(state.tab==="you")renderYou();
+}
+function renderStreak(){
+  var s=stats(), b=$("streak");
+  b.hidden = s.streak===0;            // earn it before it appears
+  if(b.hidden) return;
+  b.innerHTML="";
+  b.className="streak";
+  b.appendChild(icon("flame",15));
+  b.appendChild(el("span","n",String(s.streak)));
+  b.setAttribute("aria-label",s.streak+" weeks in a row");
+  b.onclick=function(){ switchTab("week"); };
+}
+function renderTabs(){
+  [["slate","slate","Slate"],["week","seat","Your week"],["you","you","You"]].forEach(function(t){
+    var b=$("tab-"+t[0]); b.innerHTML="";
+    b.appendChild(icon(t[1],23)); b.appendChild(el("span",null,t[2]));
+    if(t[0]==="week"&&urgentItem()) b.appendChild(el("span","badge"));
+  });
+}
+
+/* what needs you, right now */
+function urgentItem(){
+  if(!state.me)return null;
+  var list=myActivities(), best=null;
+  list.forEach(function(a){
+    var ph=phaseOf(a), s=mySeat(a.id);
+    if(isCancelled(a))return;
+    if(ph==="confirming"&&s&&!s.confirmed)
+      best=best||{a:a,kind:"confirm",k:"Needs you now",t:"Confirm your seat — "+a.title,
+        d:"Window closes in "+fmtLeft(confirmClosesAt(a)-now())+". Miss it and the seat goes back.",urgent:true};
+    else if(ph==="running"&&s&&s.confirmed)
+      best=best||{a:a,kind:"table",k:"Happening now",t:a.title,d:a.venue+" — open the table",urgent:false};
+    else if(ph==="done"&&s&&s.confirmed&&!myCheckin(a))
+      best=best||{a:a,kind:"checkin",k:"One question",t:"Did you make it to "+a.title+"?",
+        d:"Takes a second, and anything you flag reaches a moderator tonight.",urgent:false};
+    else if(ph==="done"&&s&&s.confirmed&&myCheckin(a)&&myCheckin(a).madeIt&&!mySignal(a))
+      best=best||{a:a,kind:"signal",k:"Last thing",t:"Anyone you'd see again?",
+        d:"Silent unless it's mutual — always.",urgent:false};
+    else if(ph==="locked"&&s&&s.confirmed)
+      best=best||{a:a,kind:"table",k:"Locked in",t:a.title+" is on",
+        d:"Starts in "+fmtLeft(ts(a)-now())+". The table chat is open.",urgent:false};
+  });
+  return best;
+}
+function renderUrgent(){
+  var slot=$("urgent-slot"); slot.innerHTML="";
+  var u=urgentItem(); if(!u)return;
+  var b=el("button","urgent"+(u.urgent?"":" calm")); b.type="button";
+  b.appendChild(el("div","k",u.k));
+  b.appendChild(el("div","t",u.t));
+  b.appendChild(el("div","d",u.d));
+  b.addEventListener("click",function(){
+    if(u.kind==="confirm"){confirmSeat(u.a);}
+    else if(u.kind==="table"){openTableSheet(u.a);}
+    else if(u.kind==="checkin"){openCheckinSheet(u.a);}
+    else if(u.kind==="signal"){openSignalSheet(u.a);}
+  });
+  slot.appendChild(b);
+}
+
+function makeEmpty(h,p){
+  var d=el("div","empty"); d.appendChild(el("h4",null,h)); d.appendChild(el("p",null,p)); return d;
+}
+function progressBar(a){
+  var conf=confirmedSeats(a.id).length, taken=takenSeats(a.id).length;
+  var booked=a.kind==="booked";
+  var cur=booked?conf:taken, max=booked?FLOOR:CAP;
+  var box=el("div","prog");
+  var track=el("div","track"), fill=el("div","fill"+(booked&&conf<FLOOR?" gold":""));
+  fill.style.width=Math.min(100,(cur/max)*100)+"%";
+  track.appendChild(fill); box.appendChild(track);
+  var cap=el("div","cap");
+  var left=el("span");
+  if(booked){
+    left.innerHTML = conf>=FLOOR ? "<b>Going ahead</b> — "+conf+" confirmed"
+      : "<b>"+(FLOOR-conf)+" more</b> to confirm or it cancels";
+  } else {
+    left.innerHTML = "<b>"+taken+" of "+CAP+"</b> seats taken";
+  }
+  cap.appendChild(left);
+  cap.appendChild(el("span",null,booked?"booked table":"drop-in"));
+  box.appendChild(cap);
+  return box;
 }
 
 /* ---------- slate ---------- */
 function renderSlate(){
+  renderUrgent();
   var list=$("slate-list"); list.innerHTML="";
-  var sub=$("slate-sub");
-
   if(state.mode==="local"){
-    var banner=el("div","note warn");
-    banner.innerHTML="<b>Local mode.</b> Shared storage isn't available in this view, so seats you claim stay on this device and nobody else sees them. Everything else works.";
-    list.appendChild(banner);
+    var n=el("div","note warn");
+    n.innerHTML="<b>Local mode.</b> Shared storage isn't available here, so seats stay on this device. Everything else works.";
+    list.appendChild(n);
   }
-  if(state.mode==="connecting"){
-    list.appendChild(makeEmpty("Loading the slate…", "One moment — reading this week's activities."));
-    return;
-  }
-
-  var visible = state.activities.filter(function(a){
-    var keys=Object.keys(state.filters).filter(function(k){ return state.filters[k]; });
-    return keys.every(function(k){ return (a.attrs||[]).indexOf(k)>=0; });
-  }).sort(function(x,y){ return ts(x)-ts(y); });
+  if(state.mode==="connecting"){ list.appendChild(makeEmpty("Loading the slate…","One moment.")); return; }
+  var keys=Object.keys(state.filters).filter(function(k){return state.filters[k];});
+  var vis=state.activities.filter(function(a){
+    return keys.every(function(k){return (a.attrs||[]).indexOf(k)>=0;});
+  }).sort(function(x,y){return ts(x)-ts(y);});
 
   if(!state.activities.length){
-    list.appendChild(makeEmpty("Nothing up yet","The slate goes up on Sunday evening. Three or four things, six seats each."));
+    list.appendChild(makeEmpty("Nothing up yet","The slate goes up Sunday evening — three or four things, six seats each."));
+    $("slate-sub").textContent=""; return;
+  }
+  if(!vis.length){
+    list.appendChild(makeEmpty("Nothing matches those","If one filter empties the whole week, the week was badly programmed. That's on us."));
     return;
   }
-  if(!visible.length){
-    list.appendChild(makeEmpty("Nothing matches those filters","If turning one filter on empties the whole week, the week was badly programmed. That's on us, not you."));
-    return;
-  }
-  sub.textContent = visible.length + " " + (visible.length===1?"thing":"things") + " on this week. Six seats each, $5 a seat, and the activity runs whether or not you know anyone there.";
-
-  visible.forEach(function(a){ list.appendChild(activityCard(a)); });
+  $("slate-sub").textContent = vis.length+" "+(vis.length===1?"thing":"things") +
+    " on. Six seats each, $5, and it runs whether or not you know anyone.";
+  vis.forEach(function(a){ list.appendChild(activityCard(a)); });
 }
-
-function makeEmpty(h,p){
-  var d=el("div","empty");
-  d.appendChild(el("h4",null,h));
-  d.appendChild(el("p",null,p));
-  return d;
-}
-
 function activityCard(a){
-  var btn=el("button","card act");
-  btn.type="button";
-  btn.addEventListener("click", function(){ openActivitySheet(a); });
+  var card=el("div","card act");
+  var row=el("button","row"); row.type="button";
+  row.setAttribute("aria-label","Details for "+a.title);
+  row.addEventListener("click",function(){openActivitySheet(a);});
+  var txt=el("div","txt");
+  txt.appendChild(el("h3",null,a.title));
+  txt.appendChild(el("div","when",fmtWhen(a)+" · "+a.venue));
+  var chips=el("div","chips"); chips.style.marginTop="8px";
+  var map={alcohol_free:["alcohol-free","ok"],alcohol_served:["alcohol served","warn"],
+    quiet:["quiet","ok"],ends_by_9:["ends by 9","ok"]};
+  (a.attrs||[]).forEach(function(t){ if(map[t])chips.appendChild(el("span","chip "+map[t][1],map[t][0])); });
+  txt.appendChild(chips);
+  row.appendChild(txt);
+  var fig=el("div","fig"); fig.appendChild(tableFigure(a.id,100,true)); row.appendChild(fig);
+  card.appendChild(row);
 
-  var main=el("div","main");
-  main.appendChild(el("h3",null,a.title));
-  main.appendChild(el("div","meta", fmtWhen(a) + " · " + a.venue));
-  var chips=el("div","chips");
-  chips.appendChild(el("span","chip", a.kind==="booked" ? "booked table" : "drop-in"));
-  (a.attrs||[]).forEach(function(t){
-    var map={alcohol_free:["alcohol-free","ok"],alcohol_served:["alcohol served","warn"],quiet:["quiet","ok"],ends_by_9:["ends by 9pm","ok"]};
-    if(map[t]) chips.appendChild(el("span","chip "+map[t][1], map[t][0]));
-  });
-  main.appendChild(chips);
-
-  var side=el("div","side");
-  side.appendChild(tableFigure(a.id, 96));
-  var taken=takenSeats(a.id).length;
-  var mine=!!mySeat(a.id);
-  var line=el("div","seatline" + (mine?" mine":(taken>=CAP?" full":"")),
-    mine ? "you're in" : (taken>=CAP ? "full" : (CAP-taken) + " seat" + ((CAP-taken)===1?"":"s") + " left"));
-  side.appendChild(line);
-
-  btn.appendChild(main); btn.appendChild(side);
-  return btn;
+  var foot=el("div","foot");
+  foot.appendChild(progressBar(a));
+  var ph=phaseOf(a), mine=mySeat(a.id), full=takenSeats(a.id).length>=CAP;
+  if(mine){
+    var b1=el("button","btn ghost sm","You're in — see details"); b1.type="button";
+    b1.addEventListener("click",function(){openActivitySheet(a);});
+    foot.appendChild(b1);
+  } else if(full){
+    var b2=el("button","btn ghost sm","Full — see details"); b2.type="button";
+    b2.addEventListener("click",function(){openActivitySheet(a);});
+    foot.appendChild(b2);
+  } else if(ph==="open"||ph==="confirming"){
+    var b3=el("button","btn","Claim a seat — $5"); b3.type="button";
+    b3.addEventListener("click",function(){claimSeat(a);});
+    foot.appendChild(b3);
+  } else {
+    var b4=el("button","btn ghost sm","Closed — see details"); b4.type="button";
+    b4.addEventListener("click",function(){openActivitySheet(a);});
+    foot.appendChild(b4);
+  }
+  card.appendChild(foot);
+  return card;
 }
 
 /* ---------- your week ---------- */
 function renderWeek(){
+  var sBox=$("week-stats"); sBox.innerHTML="";
   var list=$("week-list"); list.innerHTML="";
   if(!state.me){
-    list.appendChild(makeEmpty("Nothing here yet","Claim a seat on the slate and it shows up here with whatever it needs from you next."));
+    list.appendChild(makeEmpty("Nothing here yet","Claim a seat on the slate and it turns up here with whatever it needs from you next."));
     return;
   }
+  var st=stats();
+  if(st.tables){
+    var grid=el("div","stats");
+    [[st.tables,st.tables===1?"table":"tables"],[st.people,"people met"],[st.streak,"week streak"]].forEach(function(p){
+      var c=el("div","stat"); c.appendChild(el("div","v",String(p[0]))); c.appendChild(el("div","l",p[1])); grid.appendChild(c);
+    });
+    sBox.appendChild(grid);
+    var pr=el("p","foot","Nobody else ever sees these. There's no leaderboard here and there won't be one.");
+    pr.style.marginTop="9px"; sBox.appendChild(pr);
+  }
+
   var mine=myActivities();
   if(!mine.length){
-    list.appendChild(makeEmpty("No seats this week","The slate is on the first tab. You can take a seat up until 36 hours before the thing starts."));
+    list.appendChild(makeEmpty("No seats this week","The slate's on the first tab. You can take a seat right up until 36 hours before."));
     return;
   }
   mine.forEach(function(a){ list.appendChild(weekCard(a)); });
 }
-
 function weekCard(a){
-  var wrap=el("div","card"); wrap.style.padding="16px"; wrap.style.display="flex";
-  wrap.style.flexDirection="column"; wrap.style.gap="12px";
-
-  var top=el("div"); top.style.display="flex"; top.style.gap="12px"; top.style.alignItems="flex-start";
+  var card=el("div","card pad stackv");
+  var row=el("div"); row.style.cssText="display:flex;gap:12px;align-items:flex-start";
   var t=el("div"); t.style.minWidth="0";
-  t.appendChild(el("h3",null,a.title));
-  var h3=t.querySelector("h3"); h3.style.fontSize="19px"; h3.style.fontWeight="600";
-  t.appendChild(el("div","meta", fmtWhen(a)+" · "+a.venue));
-  t.querySelector(".meta").style.cssText="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ink-2);margin-top:4px";
-  top.appendChild(t);
-  var fig=tableFigure(a.id,92); fig.style.marginLeft="auto"; fig.style.flexShrink="0";
-  top.appendChild(fig);
-  wrap.appendChild(top);
+  var h=el("h3",null,a.title); h.style.cssText="font-size:20px;font-weight:600;letter-spacing:-.015em"; t.appendChild(h);
+  var w=el("div",null,fmtWhen(a)+" · "+a.venue);
+  w.style.cssText="font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:var(--ink-2);margin-top:5px";
+  t.appendChild(w); row.appendChild(t);
+  var f=el("div"); f.style.marginLeft="auto"; f.appendChild(tableFigure(a.id,96,true)); row.appendChild(f);
+  card.appendChild(row);
 
-  var ph=phaseOf(a), s=mySeat(a.id), cancelled=isCancelled(a);
-  var conf=confirmedSeats(a.id).length, taken=takenSeats(a.id).length;
-
-  if(cancelled){
+  var ph=phaseOf(a), s=mySeat(a.id);
+  if(isCancelled(a)){
     var n=el("div","note bad");
-    n.innerHTML="<b>Cancelled — refunded.</b> Only "+conf+" of "+taken+" confirmed and this one needed "+FLOOR+". You found out a day early instead of finding out at the table.";
-    wrap.appendChild(n);
-    return wrap;
+    n.innerHTML="<b>Cancelled — refunded.</b> Only "+confirmedSeats(a.id).length+" confirmed and it needed "+FLOOR+
+      ". You found out a day early rather than at the table.";
+    card.appendChild(n); return card;
   }
+  card.appendChild(progressBar(a));
 
   if(ph==="open"){
-    var strip=el("div","strip");
-    strip.appendChild(el("span","k","Confirm opens"));
-    strip.appendChild(el("span","v", fmtLeft(confirmOpensAt(a)-now())));
-    wrap.appendChild(strip);
-    wrap.appendChild(seatSummary(a));
-    var leave=el("button","btn ghost small","Give up my seat");
-    leave.type="button"; leave.style.width="100%";
-    leave.addEventListener("click", function(){ leaveSeat(a); });
-    wrap.appendChild(leave);
-  }
-  else if(ph==="confirming"){
-    var left=confirmClosesAt(a)-now();
-    var st=el("div","strip");
-    st.appendChild(el("span","k","Window closes"));
-    var v=el("span","v"+(left<6*3600e3?" urgent":""), fmtLeft(left));
-    st.appendChild(v); wrap.appendChild(st);
-    if(s && s.confirmed){
-      var ok=el("div","note");
-      ok.innerHTML="<b>You're confirmed.</b> "+conf+" of "+taken+" so far. The chat opens when the window closes.";
-      wrap.appendChild(ok);
+    var st=el("div","chips");
+    st.appendChild(el("span","chip gold","Confirm opens in "+fmtLeft(confirmOpensAt(a)-now())));
+    card.appendChild(st);
+    var lv=el("button","linkish","Give up my seat"); lv.type="button";
+    lv.addEventListener("click",function(){leaveSeat(a);}); card.appendChild(lv);
+  } else if(ph==="confirming"){
+    if(s&&s.confirmed){
+      var ok=el("div","note"); ok.innerHTML="<b>You're confirmed.</b> The chat opens when the window closes.";
+      card.appendChild(ok);
     } else {
       var warn=el("div","note warn");
-      warn.innerHTML="<b>One tap and the seat is yours for real.</b> Miss the window and it goes to the waitlist — the $5 doesn't come back.";
-      wrap.appendChild(warn);
-      var c=el("button","btn","Confirm my seat");
-      c.type="button"; c.addEventListener("click", function(){ confirmSeat(a); });
-      wrap.appendChild(c);
+      warn.innerHTML="<b>Closes in "+fmtLeft(confirmClosesAt(a)-now())+".</b> One tap and the seat is locked. Miss it and it goes back.";
+      card.appendChild(warn);
+      var cb=el("button","btn","Confirm my seat"); cb.type="button";
+      cb.addEventListener("click",function(){confirmSeat(a);}); card.appendChild(cb);
     }
-    wrap.appendChild(seatSummary(a));
-  }
-  else if(ph==="locked" || ph==="running"){
-    var host=hostOf(a.id);
-    var st2=el("div","strip");
-    st2.appendChild(el("span","k", ph==="running" ? "Happening now" : "Starts in"));
-    st2.appendChild(el("span","v", ph==="running" ? "at "+a.venue : fmtLeft(ts(a)-now())));
-    wrap.appendChild(st2);
-    if(s && !s.confirmed){
+  } else if(ph==="locked"||ph==="running"){
+    if(s&&!s.confirmed){
       var lost=el("div","note bad");
       lost.innerHTML="<b>You didn't confirm, so the seat went back.</b> The table is running without you.";
-      wrap.appendChild(lost);
-      return wrap;
+      card.appendChild(lost); return card;
     }
-    var open=el("button","btn","Open the table" + (host && state.me && host.studentId===state.me.id ? " — you're hosting" : ""));
-    open.type="button"; open.addEventListener("click", function(){ openTableSheet(a); });
-    wrap.appendChild(open);
-  }
-  else if(ph==="done"){
-    if(s && !s.confirmed){
-      wrap.appendChild(makeEmpty("You didn't confirm this one","No signal to give — you weren't at the table."));
-      return wrap;
+    var host=hostOf(a.id), amHost=host&&state.me&&host.studentId===state.me.id;
+    if(amHost){
+      var hn=el("div","note");
+      hn.innerHTML="<b>You're hosting.</b> Post when you arrive and where you're sitting. Your seat was free.";
+      card.appendChild(hn);
     }
-    var ci=(state.signals[a.id]||{})[state.me.id+"__checkin"];
+    var ob=el("button","btn",ph==="running"?"Open the table — on now":"Open the table"); ob.type="button";
+    ob.addEventListener("click",function(){openTableSheet(a);}); card.appendChild(ob);
+  } else if(ph==="done"){
+    if(s&&!s.confirmed){ card.appendChild(makeEmpty("You didn't confirm this one","No signal to give — you weren't at the table.")); return card; }
+    var ci=myCheckin(a);
     if(!ci){
-      var q=el("div","note");
-      q.innerHTML="<b>Did you make it?</b> Quick one, and anything you flag reaches a moderator tonight.";
-      wrap.appendChild(q);
-      var row=el("div"); row.style.display="flex"; row.style.gap="8px";
-      var yes=el("button","btn small","I went"); yes.type="button"; yes.style.flex="1";
-      yes.addEventListener("click", function(){ saveCheckin(a,true,""); });
-      var no=el("button","btn ghost small","I didn't"); no.type="button"; no.style.flex="1";
-      no.addEventListener("click", function(){ saveCheckin(a,false,""); });
-      var flag=el("button","btn ghost small","Something happened"); flag.type="button";
-      flag.addEventListener("click", function(){ openFlagSheet(a); });
-      row.appendChild(yes); row.appendChild(no);
-      wrap.appendChild(row); wrap.appendChild(flag);
-    } else if(!hasSignalled(a) && ci.madeIt){
-      var sg=el("button","btn","Say who you'd see again");
-      sg.type="button"; sg.addEventListener("click", function(){ openSignalSheet(a); });
-      wrap.appendChild(sg);
+      var q=el("button","btn","Did you make it?"); q.type="button";
+      q.addEventListener("click",function(){openCheckinSheet(a);}); card.appendChild(q);
+    } else if(!mySignal(a)&&ci.madeIt){
+      var sg=el("button","btn","Anyone you'd see again?"); sg.type="button";
+      sg.addEventListener("click",function(){openSignalSheet(a);}); card.appendChild(sg);
     } else {
-      wrap.appendChild(mutualPanel(a));
-      var reopen=el("button","btn ghost small","Open the table chat");
-      reopen.type="button"; reopen.addEventListener("click", function(){ openTableSheet(a); });
-      wrap.appendChild(reopen);
+      card.appendChild(resultPanel(a));
+      var rb=el("button","btn ghost sm","Open the table chat"); rb.type="button";
+      rb.addEventListener("click",function(){openTableSheet(a);}); card.appendChild(rb);
     }
   }
-  return wrap;
+  return card;
 }
-
-function seatSummary(a){
-  var taken=takenSeats(a.id).length, conf=confirmedSeats(a.id).length;
-  var s=el("div","strip");
-  s.appendChild(el("span","k", a.kind==="booked" ? "Needs "+FLOOR+" confirmed" : "Drop-in — no floor"));
-  s.appendChild(el("span","v", conf+" confirmed / "+taken+" seated"));
-  return s;
-}
-
-/* ---------- mutual results ---------- */
-function mutualPanel(a){
-  var box=el("div"); box.style.display="flex"; box.style.flexDirection="column"; box.style.gap="10px";
-  var sigs=state.signals[a.id]||{};
-  var mine=sigs[state.me.id];
+function resultPanel(a){
+  var box=el("div","stackv");
+  var sigs=state.signals[a.id]||{}, mine=sigs[state.me.id];
   if(!mine){ box.appendChild(makeEmpty("Nothing recorded","You skipped the signal for this one.")); return box; }
-
-  var friendMutuals=[], romanticMutuals=[];
-  takenSeats(a.id).forEach(function(seat){
-    if(seat.studentId===state.me.id) return;
-    var theirs=sigs[seat.studentId];
-    if(!theirs) return;
-    if((mine.friends||[]).indexOf(seat.studentId)>=0 && (theirs.friends||[]).indexOf(state.me.id)>=0) friendMutuals.push(seat);
-    if((mine.romantic||[]).indexOf(seat.studentId)>=0 && (theirs.romantic||[]).indexOf(state.me.id)>=0) romanticMutuals.push(seat);
+  var fm=[],rm=[];
+  takenSeats(a.id).forEach(function(s){
+    if(s.studentId===state.me.id)return;
+    var th=sigs[s.studentId]; if(!th)return;
+    if((mine.friends||[]).indexOf(s.studentId)>=0&&(th.friends||[]).indexOf(state.me.id)>=0)fm.push(s.name);
+    if((mine.romantic||[]).indexOf(s.studentId)>=0&&(th.romantic||[]).indexOf(state.me.id)>=0)rm.push(s.name);
   });
-
-  if(friendMutuals.length){
-    var f=el("div","note");
-    f.innerHTML="<b>Mutual — up for hanging out again:</b> " + friendMutuals.map(function(s){ return s.name; }).join(", ") + ". The chat stays open.";
-    box.appendChild(f);
-  }
-  if(romanticMutuals.length){
-    var r=el("div","note");
-    r.innerHTML="<b>Also mutual, the other kind:</b> " + romanticMutuals.map(function(s){ return s.name; }).join(", ")
-      + ".<br><br>Whatever you do next, do it somewhere public and tell someone where you're going. That's not us being dramatic — it's the one part of this that happens off the app.";
-    box.appendChild(r);
-  }
-  if(!friendMutuals.length && !romanticMutuals.length){
-    box.appendChild(makeEmpty("Nothing mutual this time","Which is the whole design — nobody is ever told they weren't picked, including you just now. It stays silent both ways."));
-  }
+  if(fm.length){var f=el("div","note");f.innerHTML="<b>Mutual — up for doing something again:</b> "+fm.join(", ")+".";box.appendChild(f);}
+  if(rm.length){var r=el("div","note");r.innerHTML="<b>Also mutual, the other kind:</b> "+rm.join(", ")+". Somewhere public, and tell a friend where you're going.";box.appendChild(r);}
+  if(!fm.length&&!rm.length) box.appendChild(makeEmpty("Nothing mutual this time","Which is the design — nobody is ever told they weren't picked, including you."));
   return box;
 }
 
 /* ---------- you ---------- */
 function renderYou(){
   var b=$("you-body"); b.innerHTML="";
-
   if(!state.me){
-    b.appendChild(makeEmpty("Not signed in","You only need an account when you claim a seat. Browsing is free and anonymous."));
+    b.appendChild(makeEmpty("Not signed in","You only need an account to sit down. Browsing is free and anonymous."));
   } else {
-    var card=el("div","card"); card.style.padding="16px"; card.style.display="flex";
-    card.style.flexDirection="column"; card.style.gap="12px";
-    var row=el("div"); row.style.display="flex"; row.style.alignItems="center"; row.style.gap="11px";
-    var av=el("div","avatar", initials(state.me.name)); av.style.width="40px"; av.style.height="40px"; av.style.fontSize="15px";
+    var c=el("div","card pad stackv");
+    var row=el("div"); row.style.cssText="display:flex;align-items:center;gap:12px";
+    var av=el("div","avatar me",initials(state.me.name));
+    av.style.cssText+=";width:46px;height:46px;font-size:17px;border-radius:15px";
     row.appendChild(av);
     var nm=el("div");
-    nm.appendChild(el("div",null,state.me.name));
-    nm.firstChild.style.cssText="font-weight:600;font-size:16px";
-    nm.appendChild(el("div","mono","18+ verified · .edu verified"));
-    nm.lastChild.style.cssText="font-size:11px;color:var(--ink-3);letter-spacing:.04em";
-    row.appendChild(nm);
-    card.appendChild(row);
+    var n1=el("div",null,state.me.name); n1.style.cssText="font-weight:700;font-size:17px"; nm.appendChild(n1);
+    var n2=el("div",null,"18+ verified · .edu verified"); n2.style.cssText="font-size:12px;color:var(--ink-3)";
+    nm.appendChild(n2); row.appendChild(nm); c.appendChild(row);
+    var p=el("div","note"); p.innerHTML="<b>Only your first name reaches a table.</b> Not your tags, not your answers, not what you're here for.";
+    c.appendChild(p); b.appendChild(c);
 
-    var priv=el("div","note");
-    priv.innerHTML="<b>Only your first name and photo reach a table.</b> Not your tags, not your answers, not what you're here for.";
-    card.appendChild(priv);
-    b.appendChild(card);
-
-    var ic=el("div","card"); ic.style.padding="16px"; ic.style.display="flex"; ic.style.flexDirection="column"; ic.style.gap="10px";
-    ic.appendChild(el("h4",null,"What you're here for"));
-    ic.firstChild.style.cssText="font-size:16px;font-weight:600";
-    var p=el("p",null,"Asked once, never shown to anyone, never used to decide who you sit with. It does exactly one thing: decides whether the second question after a hangout exists for you at all.");
-    p.style.cssText="font-size:13.5px;color:var(--ink-2)";
-    ic.appendChild(p);
-    var sel=el("select"); sel.id="intent-select";
+    var ic=el("div","card pad stackv");
+    var ih=el("h3",null,"What you're here for"); ih.style.cssText="font-size:18px;font-weight:600"; ic.appendChild(ih);
+    var ip=el("p",null,"Asked once, shown to nobody, never used to decide who you sit with. It does one thing: decides whether the second question after a hangout exists for you at all.");
+    ip.style.cssText="font-size:14px;color:var(--ink-2)"; ic.appendChild(ip);
+    var pick=el("div","pick");
     [["friends","Just here for friends"],["open","Open to meeting someone"],["unsure","Not sure yet"]].forEach(function(o){
-      var op=el("option",null,o[1]); op.value=o[0]; if(state.me.intent===o[0]) op.selected=true; sel.appendChild(op);
+      var pb=el("button","pickbtn",o[1]); pb.type="button";
+      pb.setAttribute("aria-pressed",String(state.me.intent===o[0]));
+      pb.addEventListener("click",async function(){
+        state.me.intent=o[0]; lsSet(LS_ME,state.me);
+        try{await studentDoc(state.me.id).update({intent:o[0]});}catch(e){}
+        toast(o[0]==="open"?"Noted — still invisible to everyone else.":"Noted. That question won't appear for you.");
+        renderYou();
+      });
+      pick.appendChild(pb);
     });
-    sel.style.cssText="font:inherit;padding:11px 13px;border-radius:9px;border:1px solid var(--line);background:var(--card);color:var(--ink);width:100%";
-    sel.addEventListener("change", async function(){
-      state.me.intent=sel.value; lsSet(LS_ME,state.me);
-      try{ await studentDoc(state.me.id).update({ intent:sel.value }); }catch(e){}
-      toast(sel.value==="open" ? "Noted. Still invisible to everyone else." : "Noted. That question won't appear for you.");
-    });
-    ic.appendChild(sel);
-    b.appendChild(ic);
+    ic.appendChild(pick); b.appendChild(ic);
   }
 
-  var about=el("div","card"); about.style.padding="16px"; about.style.display="flex"; about.style.flexDirection="column"; about.style.gap="9px";
-  about.appendChild(el("h4",null,"What this prototype does and doesn't do"));
-  about.firstChild.style.cssText="font-size:16px;font-weight:600";
-  var ul=el("ul"); ul.style.cssText="margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px;font-size:13.5px;color:var(--ink-2)";
-  [
-    "Seats, confirmations, tables, chat and signals are real and shared — open this link on another device and you'll see each other.",
-    "Payment is simulated. No card is taken and nothing is charged.",
-    "Identity is this device, not a .edu address. Clearing site data makes you a new person.",
-    "The romantic signal is silent-unless-mutual in the interface, exactly as designed — but there's no server here, so the storage itself isn't a real privacy boundary. In production that comparison has to happen server-side."
-  ].forEach(function(t){ var li=el("li",null,t); ul.appendChild(li); });
-  about.appendChild(ul);
-  b.appendChild(about);
+  var pref=el("div","card pad");
+  var sr=el("div","switchrow");
+  var lab=el("div");
+  lab.appendChild(el("div","lbl","Sound"));
+  lab.appendChild(el("div","sub","A short chime when something good happens."));
+  sr.appendChild(lab);
+  var sw=el("button","sw"); sw.type="button"; sw.setAttribute("role","switch");
+  sw.setAttribute("aria-checked",String(state.sound)); sw.setAttribute("aria-label","Sound");
+  sw.addEventListener("click",function(){
+    state.sound=!state.sound; lsSet(LS_SOUND,state.sound);
+    sw.setAttribute("aria-checked",String(state.sound)); if(state.sound)ding();
+  });
+  sr.appendChild(sw); pref.appendChild(sr);
+  var sr2=el("div","switchrow");
+  var lab2=el("div");
+  lab2.appendChild(el("div","lbl","Replay the intro"));
+  lab2.appendChild(el("div","sub","The three cards you saw first time."));
+  sr2.appendChild(lab2);
+  var rb=el("button","btn ghost sm auto","Show"); rb.type="button";
+  rb.addEventListener("click",function(){ showOnboarding(); });
+  rb.style.marginLeft="auto"; sr2.appendChild(rb);
+  pref.appendChild(sr2);
+  b.appendChild(pref);
+
+  var about=el("div","card pad stackv");
+  var ah=el("h3",null,"What's real here and what isn't"); ah.style.cssText="font-size:18px;font-weight:600"; about.appendChild(ah);
+  var ul=el("ul"); ul.style.cssText="margin:0;padding-left:18px;display:flex;flex-direction:column;gap:7px;font-size:14px;color:var(--ink-2)";
+  ["Seats, confirmations, tables, chat and signals are real and shared — open this link on another device and you'll see each other.",
+   "Payment is simulated. No card is taken, nothing is charged.",
+   "Identity is this device, not a .edu address. Clearing site data makes you a new person.",
+   "The romantic signal is silent-unless-mutual in the interface, exactly as designed — but there's no server here, so storage isn't a real privacy boundary. In production that comparison happens server-side.",
+   "There is no leaderboard and there never will be. Ranking students by how social they are would be cruel to the person this is built for."
+  ].forEach(function(t){ ul.appendChild(el("li",null,t)); });
+  about.appendChild(ul); b.appendChild(about);
 
   b.appendChild(demoPanel());
 }
 
-/* ---------- demo controls ---------- */
+/* ---------- demo ---------- */
 function demoPanel(){
   var d=el("div","demo");
   d.appendChild(el("h4",null,"Demo controls — not part of the product"));
-  d.appendChild(el("p",null,"A week takes a week. These move the shared clock and populate seats so you can walk the whole loop in two minutes. Everything they touch is real state, shared with anyone else on this link."));
-
-  var row1=el("div","row");
-  var mk=function(label,fn){ var b=el("button",null,label); b.type="button"; b.addEventListener("click",fn); return b; };
-
-  row1.appendChild(mk("Fill a table", async function(){
-    var a=nextActivity(); if(!a){ toast("No activities to fill.",true); return; }
-    var names=["Priya","Marcus","Dani","Yusuf","Lena","Theo","Ama","Jonas"];
-    var free=CAP-takenSeats(a.id).length;
-    if(free<=0){ toast(a.title+" is already full."); return; }
-    for(var i=0;i<free;i++){
-      var sid=uid("demo"), nm=names[Math.floor(Math.random()*names.length)];
-      for(var n=1;n<=CAP;n++){
-        var ref=seatDoc(a.id,n);
-        try{
-          var l=await ref.acquire({holder:sid,ttlMs:3000});
-          if(!l.acquired) continue;
-          var sn=await ref.get();
-          if(sn.exists && sn.data().studentId) continue;
-          await ref.set({seatNo:n,studentId:sid,name:nm,claimedAt:Date.now(),confirmed:false,paid:PRICE,demo:true});
-          await studentDoc(sid).set({id:sid,name:nm,intent:Math.random()<0.5?"open":"friends",adult:true,demo:true,joinedAt:Date.now()});
-          break;
-        }catch(e){ toast(dbFail(e),true); return; }
-      }
-    }
-    toast(a.title+" is full.");
-    render();
+  d.appendChild(el("p",null,"A real week takes a week. These move the shared clock and fill seats so you can walk the whole loop in a minute. Everything they touch is real state — anyone else on this link sees it too."));
+  var mk=function(l,f){var b=el("button",null,l);b.type="button";b.addEventListener("click",f);return b;};
+  var r1=el("div","row");
+  r1.appendChild(mk("Fill a table",fillTable));
+  r1.appendChild(mk("Confirm the others",confirmOthers));
+  d.appendChild(r1);
+  var r2=el("div","row");
+  r2.appendChild(mk("→ confirm window",function(){jumpTo(function(a){return confirmOpensAt(a)+30*60e3;});}));
+  r2.appendChild(mk("→ table locks",function(){jumpTo(function(a){return confirmClosesAt(a)+5*60e3;});}));
+  r2.appendChild(mk("→ after it ends",function(){jumpTo(function(a){return endsAt(a)+30*60e3;});}));
+  r2.appendChild(mk("reset clock",function(){setClock(0);toast("Clock back to real time.");}));
+  d.appendChild(r2);
+  var r3=el("div","row");
+  r3.appendChild(mk("Run the whole loop",runTour));
+  r3.appendChild(mk("Become someone else",function(){
+    localStorage.removeItem(LS_ME); state.me=null; state.seenSeats={};
+    toast("You're a new person now."); switchTab("slate");
   }));
-
-  row1.appendChild(mk("Confirm everyone else", async function(){
-    var a=nextActivity(); if(!a) return;
-    var list=takenSeats(a.id).filter(function(s){ return !s.confirmed && (!state.me || s.studentId!==state.me.id); });
-    if(!list.length){ toast("Nobody left to confirm."); return; }
-    for(var i=0;i<list.length;i++){
-      try{ await seatDoc(a.id,list[i].seatNo).update({confirmed:true,confirmedAt:Date.now()}); }
-      catch(e){ toast(dbFail(e),true); return; }
-    }
-    toast(list.length+" others confirmed.");
-    render();
-  }));
-  d.appendChild(row1);
-
-  var row2=el("div","row");
-  row2.appendChild(mk("→ confirm window", function(){ jumpTo(function(a){ return confirmOpensAt(a)+30*60e3; }); }));
-  row2.appendChild(mk("→ table locks", function(){ jumpTo(function(a){ return confirmClosesAt(a)+5*60e3; }); }));
-  row2.appendChild(mk("→ after it ends", function(){ jumpTo(function(a){ return endsAt(a)+30*60e3; }); }));
-  row2.appendChild(mk("reset clock", function(){ setClock(0); toast("Clock back to real time."); }));
-  d.appendChild(row2);
-
-  var row3=el("div","row");
-  row3.appendChild(mk("Become someone else", function(){
-    localStorage.removeItem(LS_ME); state.me=null;
-    toast("You're a new person. Claim a seat to sign up again.");
-    render();
-  }));
-  d.appendChild(row3);
+  d.appendChild(r3);
   return d;
 }
 function nextActivity(){
-  var mineFirst=myActivities();
-  if(mineFirst.length) return mineFirst[0];
-  return state.activities.slice().sort(function(x,y){ return ts(x)-ts(y); })[0];
+  var m=myActivities(); if(m.length)return m[0];
+  return state.activities.slice().sort(function(x,y){return ts(x)-ts(y);})[0];
+}
+async function fillTable(){
+  var a=nextActivity(); if(!a){toast("No activities to fill.",true);return;}
+  var names=["Priya","Marcus","Dani","Yusuf","Lena","Theo","Ama","Jonas","Nadia","Kwame"];
+  var free=CAP-takenSeats(a.id).length;
+  if(free<=0){toast(a.title+" is already full.");return;}
+  for(var i=0;i<free;i++){
+    var sid=uid("demo"), nm=names[Math.floor(Math.random()*names.length)];
+    for(var n=1;n<=CAP;n++){
+      var ref=seatDoc(a.id,n);
+      try{
+        var l=await ref.acquire({holder:sid,ttlMs:3000});
+        if(!l.acquired)continue;
+        var sn=await ref.get();
+        if(sn.exists&&sn.data().studentId)continue;
+        await ref.set({seatNo:n,studentId:sid,name:nm,claimedAt:Date.now(),confirmed:false,paid:PRICE,demo:true});
+        await studentDoc(sid).set({id:sid,name:nm,intent:Math.random()<0.5?"open":"friends",adult:true,demo:true,joinedAt:Date.now()});
+        break;
+      }catch(e){toast(dbFail(e),true);return;}
+    }
+  }
+  toast(a.title+" is full."); render();
+}
+async function confirmOthers(){
+  var a=nextActivity(); if(!a)return;
+  var list=takenSeats(a.id).filter(function(s){return !s.confirmed&&(!state.me||s.studentId!==state.me.id);});
+  if(!list.length){toast("Nobody left to confirm.");return;}
+  for(var i=0;i<list.length;i++){
+    try{await seatDoc(a.id,list[i].seatNo).update({confirmed:true,confirmedAt:Date.now()});}
+    catch(e){toast(dbFail(e),true);return;}
+  }
+  toast(list.length+" others confirmed."); render();
+}
+async function signalOthers(a){
+  var others=confirmedSeats(a.id).filter(function(s){return !state.me||s.studentId!==state.me.id;});
+  for(var i=0;i<others.length;i++){
+    var picks=confirmedSeats(a.id).filter(function(s){return s.studentId!==others[i].studentId;})
+      .map(function(s){return s.studentId;});
+    try{
+      await signalDoc(a.id,others[i].studentId).set({studentId:others[i].studentId,
+        friends:picks, romantic:Math.random()<0.6?picks:[], at:Date.now(),kind:"signal"});
+    }catch(e){}
+  }
+}
+async function runTour(){
+  if(!state.me){toast("Claim a seat first — then this walks the rest.",true);switchTab("slate");return;}
+  var a=nextActivity(); if(!a)return;
+  toast("Filling the table…"); await fillTable();
+  await setClock(confirmOpensAt(a)+30*60e3-Date.now());
+  toast("Confirm window is open — confirming everyone…"); await sleep(600);
+  await confirmOthers();
+  await sleep(400);
+  toast("Jumping past the event…");
+  await setClock(endsAt(a)+30*60e3-Date.now());
+  await signalOthers(a);
+  await sleep(500);
+  switchTab("week");
+  toast("Now you're the only one left to answer.");
 }
 function jumpTo(fn){
-  var a=nextActivity();
-  if(!a){ toast("No activity to jump to.",true); return; }
+  var a=nextActivity(); if(!a){toast("No activity to jump to.",true);return;}
   setClock(fn(a)-Date.now());
-  toast("Clock moved. It's now " + fmtWhen({startsAt:new Date(now()).toISOString()}) + " for everyone on this link.");
+  toast("Clock moved for everyone on this link.");
 }
 async function setClock(off){
   state.clockOffset=off;
-  try{ await clockDoc().set({ offsetMs:off, at:Date.now() }); }catch(e){}
+  try{await clockDoc().set({offsetMs:off,at:Date.now()});}catch(e){}
   render();
 }
 
-/* ============================================================
-   Sheets
-   ============================================================ */
+/* ============================================================ sheets */
 function openSheet(build){
-  var wrap=$("sheet-wrap"), sheet=$("sheet");
-  sheet.innerHTML=""; build(sheet); wrap.hidden=false;
-  state.openSheet=build;
-  var first=sheet.querySelector("input,select,button");
-  if(first) first.focus();
+  var v=$("veil"), s=$("sheet");
+  s.innerHTML=""; s.appendChild(el("div","grab")); build(s); v.hidden=false;
+  var f=s.querySelector("input,select,button:not(.x)"); if(f)f.focus();
 }
-function closeSheet(){ $("sheet-wrap").hidden=true; state.openSheet=null; }
-$("sheet-wrap").addEventListener("click", function(e){ if(e.target===$("sheet-wrap")) closeSheet(); });
-document.addEventListener("keydown", function(e){ if(e.key==="Escape" && !$("sheet-wrap").hidden) closeSheet(); });
-
-function sheetHead(sheet, title, sub){
-  var h=el("div","sheet-head");
-  var t=el("div");
+function closeSheet(){ $("veil").hidden=true; }
+$("veil").addEventListener("click",function(e){ if(e.target===$("veil"))closeSheet(); });
+document.addEventListener("keydown",function(e){
+  if(e.key!=="Escape")return;
+  if(!$("veil").hidden)closeSheet();
+  else if(!$("celebrate").hidden)closeCelebrate();
+});
+function sheetHead(s,title,sub){
+  var h=el("div","sheet-head"), t=el("div");
   var h3=el("h3",null,title); h3.id="sheet-title"; t.appendChild(h3);
-  if(sub){ var p=el("p",null,sub); p.style.cssText="font-size:13.5px;color:var(--ink-2);margin-top:5px"; t.appendChild(p); }
+  if(sub){var p=el("p",null,sub);p.style.cssText="font-size:14px;color:var(--ink-2);margin-top:5px";t.appendChild(p);}
   h.appendChild(t);
   var x=el("button","x","×"); x.type="button"; x.setAttribute("aria-label","Close");
-  x.addEventListener("click", closeSheet); h.appendChild(x);
-  sheet.appendChild(h);
+  x.addEventListener("click",closeSheet); h.appendChild(x);
+  s.appendChild(h);
 }
 
 function openActivitySheet(a){
-  openSheet(function(sheet){
-    sheetHead(sheet, a.title, fmtWhen(a)+" · "+a.venue);
-    var fig=tableFigure(a.id,150); fig.style.alignSelf="center"; sheet.appendChild(fig);
-
-    if(a.blurb){ var p=el("p",null,a.blurb); p.style.cssText="font-size:14.5px;color:var(--ink-2);line-height:1.5"; sheet.appendChild(p); }
-
-    var taken=takenSeats(a.id).length, ph=phaseOf(a), mine=mySeat(a.id);
-    var st=el("div","strip");
-    st.appendChild(el("span","k", a.kind==="booked" ? "Booked table" : "Drop-in"));
-    st.appendChild(el("span","v", taken+" / "+CAP+" seats"));
-    sheet.appendChild(st);
-
-    var st2=el("div","strip");
-    st2.appendChild(el("span","k", ph==="open" ? "Confirm opens in" : ph==="confirming" ? "Confirm window closes in" : "Status"));
-    st2.appendChild(el("span","v",
-      ph==="open" ? fmtLeft(confirmOpensAt(a)-now())
-      : ph==="confirming" ? fmtLeft(confirmClosesAt(a)-now())
-      : ph==="locked" ? "table locked"
-      : ph==="running" ? "happening now" : "finished"));
-    sheet.appendChild(st2);
-
+  openSheet(function(s){
+    sheetHead(s,a.title,fmtWhen(a)+" · "+a.venue);
+    var f=el("div"); f.style.cssText="display:grid;place-items:center";
+    f.appendChild(tableFigure(a.id,170,false)); s.appendChild(f);
+    if(a.blurb){var p=el("p",null,a.blurb);p.style.cssText="font-size:15px;color:var(--ink-2);line-height:1.55";s.appendChild(p);}
+    s.appendChild(progressBar(a));
+    var ph=phaseOf(a), mine=mySeat(a.id), full=takenSeats(a.id).length>=CAP;
     if(a.kind==="booked"){
       var n=el("div","note");
       n.innerHTML="Needs <b>"+FLOOR+" confirmed</b> or it cancels and refunds a day early. A drop-in never cancels — it happens with or without us.";
-      sheet.appendChild(n);
+      s.appendChild(n);
     }
-
     if(mine){
-      var have=el("div","note");
-      have.innerHTML="<b>You're in, seat "+mine.seatNo+".</b> $5 charged — simulated here.";
-      sheet.appendChild(have);
-      var go=el("button","btn ghost","See it in Your week"); go.type="button";
-      go.addEventListener("click", function(){ closeSheet(); switchTab("week"); });
-      sheet.appendChild(go);
-    } else if(taken>=CAP){
-      sheet.appendChild(makeEmpty("Full","Six is the table. Waitlists are the next thing to build."));
-    } else if(ph!=="open" && ph!=="confirming"){
-      sheet.appendChild(makeEmpty("Too late for this one","Seats close when the confirm window does."));
+      var ok=el("div","note"); ok.innerHTML="<b>You're in, seat "+mine.seatNo+".</b> $5 charged — simulated here.";
+      s.appendChild(ok);
+      var g=el("button","btn ghost","See it in Your week"); g.type="button";
+      g.addEventListener("click",function(){closeSheet();switchTab("week");}); s.appendChild(g);
+    } else if(full){
+      s.appendChild(makeEmpty("Full","Six is the table. Waitlists are the next thing to build."));
+    } else if(ph!=="open"&&ph!=="confirming"){
+      s.appendChild(makeEmpty("Too late for this one","Seats close when the confirm window does."));
     } else {
-      var b=el("button","btn","Claim a seat — $5");
-      b.type="button";
-      b.addEventListener("click", function(){ closeSheet(); claimSeat(a); });
-      sheet.appendChild(b);
-      var fine=el("p",null,"The $5 covers the activity itself. It comes back if the event cancels, and it doesn't if you don't turn up — which is the entire reason it exists.");
-      fine.style.cssText="font-size:12.5px;color:var(--ink-3);line-height:1.5";
-      sheet.appendChild(fine);
+      var b=el("button","btn","Claim a seat — $5"); b.type="button";
+      b.addEventListener("click",function(){closeSheet();claimSeat(a);}); s.appendChild(b);
+      var fine=el("p","foot","The $5 covers the activity. It comes back if the event cancels, and it doesn't if you skip — which is the entire reason it exists.");
+      s.appendChild(fine);
     }
   });
 }
 
 function openJoinSheet(a){
-  openSheet(function(sheet){
-    sheetHead(sheet,"Take the seat","Two questions and a date of birth. You can browse without this — it's only needed to sit down.");
-    var f1=el("div","field");
-    f1.appendChild(el("label",null,"First name"));
-    var i1=el("input"); i1.id="join-name"; i1.type="text"; i1.placeholder="What the table will call you"; i1.autocomplete="given-name";
-    f1.appendChild(i1); sheet.appendChild(f1);
+  openSheet(function(s){
+    sheetHead(s,"Take the seat","Two questions and a date of birth. You only need this to sit down — browsing needs nothing.");
+    var f1=el("div","field"); f1.appendChild(el("label",null,"First name"));
+    var i1=el("input"); i1.id="join-name"; i1.type="text"; i1.placeholder="What the table calls you";
+    i1.autocomplete="given-name"; f1.appendChild(i1); s.appendChild(f1);
 
-    var f2=el("div","field");
-    f2.appendChild(el("label",null,"Date of birth"));
-    var i2=el("input"); i2.id="join-dob"; i2.type="date";
-    f2.appendChild(i2);
-    var hint=el("div","hint","18+ only, and that's firm. A romantic-signal feature plus minors isn't a line we get to blur.");
-    f2.appendChild(hint); sheet.appendChild(f2);
+    var f2=el("div","field"); f2.appendChild(el("label",null,"Date of birth"));
+    var i2=el("input"); i2.id="join-dob"; i2.type="date"; f2.appendChild(i2);
+    f2.appendChild(el("div","hint","18+ only, and that's firm — a romantic-signal feature plus minors isn't a line we get to blur."));
+    s.appendChild(f2);
 
-    var f3=el("div","field");
-    f3.appendChild(el("label",null,"What are you here for?"));
-    var s=el("select"); s.id="join-intent";
-    [["friends","Just here for friends"],["open","Open to meeting someone"],["unsure","Not sure yet"]].forEach(function(o){
-      var op=el("option",null,o[1]); op.value=o[0]; s.appendChild(op);
+    var f3=el("div","field"); f3.appendChild(el("label",null,"What are you here for?"));
+    var chosen={v:"friends"};
+    var pick=el("div","pick");
+    [["friends","Just here for friends"],["open","Open to meeting someone"],["unsure","Not sure yet"]].forEach(function(o,idx){
+      var pb=el("button","pickbtn",o[1]); pb.type="button";
+      pb.setAttribute("aria-pressed",String(idx===0));
+      pb.addEventListener("click",function(){
+        chosen.v=o[0];
+        Array.prototype.forEach.call(pick.children,function(k){k.setAttribute("aria-pressed","false");});
+        pb.setAttribute("aria-pressed","true");
+      });
+      pick.appendChild(pb);
     });
-    f3.appendChild(s);
-    f3.appendChild(el("div","hint","Asked once. Never displayed to anyone, never used to decide who you sit with, changeable any time. If you say friends, you will never be asked to rate anyone romantically."));
-    sheet.appendChild(f3);
+    f3.appendChild(pick);
+    f3.appendChild(el("div","hint","Asked once. Never displayed, never used for seating, changeable any time. Say friends and you'll never be asked to rate anyone romantically."));
+    s.appendChild(f3);
 
-    var err=el("div","note bad"); err.id="join-err"; err.hidden=true; sheet.appendChild(err);
-
+    var err=el("div","note bad"); err.id="join-err"; err.hidden=true; s.appendChild(err);
     var go=el("button","btn","Sign up and take the seat"); go.type="button";
-    go.addEventListener("click", async function(){
+    go.addEventListener("click",async function(){
       var name=i1.value.trim(), dob=i2.value;
-      var showErr=function(m){ err.textContent=m; err.hidden=false; };
-      if(name.length<2){ showErr("Give the table something to call you — two letters or more."); i1.focus(); return; }
-      if(!dob){ showErr("We need a date of birth for the 18+ check."); i2.focus(); return; }
+      var bad=function(m){err.textContent=m;err.hidden=false;};
+      if(name.length<2){bad("Give the table something to call you — two letters or more.");i1.focus();return;}
+      if(!dob){bad("We need a date of birth for the 18+ check.");i2.focus();return;}
       var age=ageFrom(dob);
-      if(age===null){ showErr("That date didn't parse. Try again?"); return; }
-      if(age<18){ showErr("Lobby is 18+ only. That's a hard line, not a setting — sorry."); return; }
-      if(age>120){ showErr("That date is in the wrong century."); return; }
+      if(age===null){bad("That date didn't parse. Try again?");return;}
+      if(age<18){bad("Lobby is 18+ only. That's a hard line, not a setting — sorry.");return;}
+      if(age>120){bad("That date is in the wrong century.");return;}
       go.disabled=true; go.textContent="Setting you up…";
-      await createMe(name, dob, s.value);
-      closeSheet();
-      await claimSeat(a);
-      render();
+      await createMe(name,dob,chosen.v);
+      closeSheet(); await claimSeat(a);
     });
-    sheet.appendChild(go);
-  });
-}
-
-function openTableSheet(a){
-  openSheet(function(sheet){
-    var host=hostOf(a.id);
-    sheetHead(sheet, "Table — "+a.title, fmtWhen(a)+" · "+a.venue);
-
-    var roster=el("div","roster");
-    confirmedSeats(a.id).sort(function(x,y){ return (x.claimedAt||0)-(y.claimedAt||0); }).forEach(function(s){
-      var row=el("div","person");
-      row.appendChild(el("div","avatar", initials(s.name)));
-      var box=el("div");
-      var isMe = state.me && s.studentId===state.me.id;
-      box.appendChild(el("div","nm", s.name + (isMe?" (you)":"")));
-      var role = host && host.studentId===s.studentId ? "host · seat free" : "seat "+s.seatNo;
-      box.appendChild(el("div","rl", role));
-      row.appendChild(box);
-      if(!isMe && state.me){
-        var more=el("button","act-btn","⋯"); more.type="button";
-        more.setAttribute("aria-label","Report or block "+s.name);
-        more.addEventListener("click", function(){ blockPerson(a,s); });
-        row.appendChild(more);
-      }
-      roster.appendChild(row);
-    });
-    sheet.appendChild(roster);
-
-    if(host && state.me && host.studentId===state.me.id){
-      var hn=el("div","note");
-      hn.innerHTML="<b>You're hosting this one.</b> That means two things: post when you arrive and where you're sitting, and if anything feels off, tap the ⋯ — you escalate, you don't have to handle it.";
-      sheet.appendChild(hn);
-    }
-
-    var chat=el("div","chat"); chat.id="chat-log"; chat.dataset.act=a.id;
-    var msgs=state.chats[a.id]||[];
-    if(!msgs.length){
-      chat.appendChild(makeEmpty("Chat opens when the table locks","Nobody has to go first — the bot posts the plan, then a couple of questions."));
-    }
-    msgs.forEach(function(m){ chat.appendChild(chatBubble(m)); });
-    sheet.appendChild(chat);
-
-    if(state.me && mySeat(a.id) && mySeat(a.id).confirmed){
-      var comp=el("div","composer");
-      var inp=el("input"); inp.id="chat-input"; inp.type="text"; inp.placeholder="Say something";
-      inp.setAttribute("aria-label","Message the table");
-      var send=el("button","btn small","Send"); send.type="button";
-      var doSend=async function(){
-        var txt=inp.value.trim(); if(!txt) return;
-        inp.value=""; send.disabled=true;
-        await postMessage(a.id,{ id:uid("m"), kind:"human", by:state.me.id, name:state.me.name, text:txt.slice(0,400), at:Date.now() });
-        send.disabled=false;
-        if($("chat-log")) $("chat-log").scrollTop=$("chat-log").scrollHeight;
-      };
-      send.addEventListener("click", doSend);
-      inp.addEventListener("keydown", function(e){ if(e.key==="Enter") doSend(); });
-      comp.appendChild(inp); comp.appendChild(send);
-      sheet.appendChild(comp);
-    }
-    setTimeout(function(){ var c=$("chat-log"); if(c) c.scrollTop=c.scrollHeight; },0);
+    s.appendChild(go);
   });
 }
 
 function refreshChatLog(actId){
   var log=$("chat-log");
-  if(!log || log.dataset.act!==actId) return;
-  var keep=log.scrollTop + log.clientHeight >= log.scrollHeight - 40;
+  if(!log||log.dataset.act!==actId)return;
+  var keep=log.scrollTop+log.clientHeight>=log.scrollHeight-40;
   log.innerHTML="";
-  (state.chats[actId]||[]).forEach(function(m){ log.appendChild(chatBubble(m)); });
-  if(keep) log.scrollTop=log.scrollHeight;
+  (state.chats[actId]||[]).forEach(function(m){log.appendChild(chatBubble(m));});
+  if(keep)log.scrollTop=log.scrollHeight;
 }
 function chatBubble(m){
-  var isMe = state.me && m.by===state.me.id;
+  var isMe=state.me&&m.by===state.me.id;
   var d=el("div","msg"+(isMe?" me":"")+(m.kind==="bot"?" bot":""));
-  d.appendChild(el("div","by", m.kind==="bot" ? "Lobby" : (isMe?"You":m.name)));
-  d.appendChild(el("div","bubble", m.text));
+  d.appendChild(el("div","by",m.kind==="bot"?"Lobby":(isMe?"You":m.name)));
+  d.appendChild(el("div","bubble",m.text));
   return d;
 }
+function openTableSheet(a){
+  openSheet(function(s){
+    var host=hostOf(a.id);
+    sheetHead(s,"Your table",a.title+" · "+fmtWhen(a)+" · "+a.venue);
+    var roster=el("div","roster");
+    confirmedSeats(a.id).sort(function(x,y){return (x.claimedAt||0)-(y.claimedAt||0);}).forEach(function(p){
+      var row=el("div","person");
+      var isMe=state.me&&p.studentId===state.me.id;
+      row.appendChild(el("div","avatar"+(isMe?" me":""),initials(p.name)));
+      var box=el("div");
+      box.appendChild(el("div","nm",p.name+(isMe?" (you)":"")));
+      box.appendChild(el("div","rl",host&&host.studentId===p.studentId?"host · seat free":"seat "+p.seatNo));
+      row.appendChild(box);
+      if(!isMe&&state.me){
+        var m=el("button","dots end","⋯"); m.type="button";
+        m.setAttribute("aria-label","Report or block "+p.name);
+        m.addEventListener("click",function(){blockPerson(a,p);});
+        row.appendChild(m);
+      }
+      roster.appendChild(row);
+    });
+    s.appendChild(roster);
+    if(host&&state.me&&host.studentId===state.me.id){
+      var hn=el("div","note");
+      hn.innerHTML="<b>You're hosting.</b> Two things: post when you arrive and where you're sitting, and if anything feels off, tap the ⋯ — you escalate, you don't have to handle it.";
+      s.appendChild(hn);
+    }
+    var chat=el("div","chat"); chat.id="chat-log"; chat.dataset.act=a.id;
+    var msgs=state.chats[a.id]||[];
+    if(!msgs.length) chat.appendChild(makeEmpty("Chat opens when the table locks","Nobody has to go first — the bot posts the plan, then a couple of questions."));
+    msgs.forEach(function(m){chat.appendChild(chatBubble(m));});
+    s.appendChild(chat);
+    var ms=mySeat(a.id);
+    if(state.me&&ms&&ms.confirmed){
+      var comp=el("div","composer");
+      var inp=el("input"); inp.id="chat-input"; inp.type="text"; inp.placeholder="Say something";
+      inp.setAttribute("aria-label","Message the table");
+      var send=el("button","btn sm auto","Send"); send.type="button";
+      var doSend=async function(){
+        var t=inp.value.trim(); if(!t)return;
+        inp.value=""; send.disabled=true;
+        await postMessage(a.id,{id:uid("m"),kind:"human",by:state.me.id,name:state.me.name,text:t.slice(0,400),at:Date.now()});
+        send.disabled=false;
+      };
+      send.addEventListener("click",doSend);
+      inp.addEventListener("keydown",function(e){if(e.key==="Enter")doSend();});
+      comp.appendChild(inp); comp.appendChild(send); s.appendChild(comp);
+    }
+    setTimeout(function(){var c=$("chat-log");if(c)c.scrollTop=c.scrollHeight;},0);
+  });
+}
 
-function openFlagSheet(a){
-  openSheet(function(sheet){
-    sheetHead(sheet,"Something happened","This reaches a moderator tonight, not on Monday. You don't have to be sure, and you don't have to name anyone.");
-    var f=el("div","field");
-    f.appendChild(el("label",null,"What should we know?"));
-    var i=el("input"); i.id="flag-note"; i.type="text"; i.placeholder="As much or as little as you want";
-    f.appendChild(i); sheet.appendChild(f);
-    var b=el("button","btn","Send it"); b.type="button";
-    b.addEventListener("click", function(){ saveCheckin(a,true,i.value); closeSheet(); });
-    sheet.appendChild(b);
+function openCheckinSheet(a){
+  openSheet(function(s){
+    sheetHead(s,"Did you make it?","Quick one. Anything you flag reaches a moderator tonight, not on Monday.");
+    var y=el("button","btn","I went"); y.type="button";
+    y.addEventListener("click",function(){closeSheet();saveCheckin(a,true,"");}); s.appendChild(y);
+    var n=el("button","btn ghost","I didn't make it"); n.type="button";
+    n.addEventListener("click",function(){closeSheet();saveCheckin(a,false,"");}); s.appendChild(n);
+    var f=el("div","field"); f.appendChild(el("label",null,"Anything we should know?"));
+    var i=el("input"); i.type="text"; i.placeholder="Optional — as much or as little as you want";
+    f.appendChild(i); s.appendChild(f);
+    var sb=el("button","btn clay","Send that to a moderator"); sb.type="button";
+    sb.addEventListener("click",function(){
+      if(!i.value.trim()){toast("Write something first, or use the buttons above.",true);return;}
+      closeSheet(); saveCheckin(a,true,i.value);
+    });
+    s.appendChild(sb);
   });
 }
 
 function openSignalSheet(a){
-  var roster=confirmedSeats(a.id).filter(function(s){ return !state.me || s.studentId!==state.me.id; });
+  var roster=confirmedSeats(a.id).filter(function(p){return !state.me||p.studentId!==state.me.id;});
   var friends=[], romantic=[];
-  openSheet(function(sheet){
-    sheetHead(sheet,"After "+a.title, null);
-
-    var q1=el("div");
-    q1.appendChild(el("h4",null,"Anyone you'd do something with again?"));
-    q1.firstChild.style.cssText="font-size:16px;font-weight:600;margin-bottom:4px";
+  openSheet(function(s){
+    sheetHead(s,"After "+a.title,null);
+    var h1=el("h3",null,"Anyone you'd do something with again?");
+    h1.style.cssText="font-size:18px;font-weight:600"; s.appendChild(h1);
     var p1=el("p",null,"Tap as many as you like. Nobody hears anything unless you both picked each other.");
-    p1.style.cssText="font-size:13.5px;color:var(--ink-2)";
-    q1.appendChild(p1);
-    sheet.appendChild(q1);
-    sheet.appendChild(pickList(roster, friends));
-
-    if(state.me && state.me.intent==="open"){
-      var q2=el("div"); q2.style.marginTop="6px";
-      q2.appendChild(el("h4",null,"And separately — anyone you'd want to see one-on-one?"));
-      q2.firstChild.style.cssText="font-size:16px;font-weight:600;margin-bottom:4px";
-      var p2=el("p",null,"Same rule, stricter: silent unless it's mutual, and only ever mutual between two people who both said they were open to this.");
-      p2.style.cssText="font-size:13.5px;color:var(--ink-2)";
-      q2.appendChild(p2);
-      sheet.appendChild(q2);
-      sheet.appendChild(pickList(roster, romantic));
+    p1.style.cssText="font-size:14px;color:var(--ink-2)"; s.appendChild(p1);
+    s.appendChild(pickList(roster,friends));
+    if(state.me&&state.me.intent==="open"){
+      var h2=el("h3",null,"And separately — anyone one-on-one?");
+      h2.style.cssText="font-size:18px;font-weight:600;margin-top:8px"; s.appendChild(h2);
+      var p2=el("p",null,"Same rule, stricter: silent unless mutual, and only ever mutual between two people who both said they were open to this.");
+      p2.style.cssText="font-size:14px;color:var(--ink-2)"; s.appendChild(p2);
+      s.appendChild(pickList(roster,romantic));
     }
-
     var save=el("button","btn","Done"); save.type="button";
-    save.addEventListener("click", function(){ saveSignal(a, friends, romantic); closeSheet(); });
-    sheet.appendChild(save);
+    save.addEventListener("click",function(){saveSignal(a,friends,romantic);});
+    s.appendChild(save);
   });
 }
-
-function pickList(roster, bucket){
+function pickList(roster,bucket){
   var box=el("div","roster");
-  if(!roster.length){
-    box.appendChild(makeEmpty("Nobody else confirmed","Not much of a table. The $5 came back."));
-    return box;
-  }
-  roster.forEach(function(s){
-    var row=el("button","person"); row.type="button"; row.style.width="100%"; row.style.textAlign="left";
-    row.setAttribute("aria-pressed","false");
-    row.appendChild(el("div","avatar", initials(s.name)));
-    var box2=el("div"); box2.appendChild(el("div","nm", s.name)); row.appendChild(box2);
-    var mark=el("div","rl","tap to pick"); mark.style.marginLeft="auto"; row.appendChild(mark);
-    row.addEventListener("click", function(){
-      var i=bucket.indexOf(s.studentId);
-      if(i>=0){ bucket.splice(i,1); mark.textContent="tap to pick"; row.setAttribute("aria-pressed","false"); row.style.background=""; }
-      else { bucket.push(s.studentId); mark.textContent="picked"; row.setAttribute("aria-pressed","true"); row.style.background="var(--green-bg)"; }
+  if(!roster.length){ box.appendChild(makeEmpty("Nobody else confirmed","Not much of a table. The $5 came back.")); return box; }
+  roster.forEach(function(p){
+    var row=el("button","person"); row.type="button"; row.setAttribute("aria-pressed","false");
+    row.appendChild(el("div","avatar",initials(p.name)));
+    var b=el("div"); b.appendChild(el("div","nm",p.name)); row.appendChild(b);
+    var end=el("div","end"); var tick=el("div","tick");
+    var chk=icon("tick",15); chk.style.color="var(--ground)"; tick.appendChild(chk);
+    end.appendChild(tick); row.appendChild(end);
+    row.addEventListener("click",function(){
+      var i=bucket.indexOf(p.studentId);
+      if(i>=0){bucket.splice(i,1);row.setAttribute("aria-pressed","false");}
+      else{bucket.push(p.studentId);row.setAttribute("aria-pressed","true");ding();}
     });
     box.appendChild(row);
   });
   return box;
 }
 
-/* ============================================================
-   Tabs
-   ============================================================ */
+/* ============================================================ onboarding */
+var ONB=[
+  {t:"Something's already happening",
+   p:"Trivia on Thursday. Bouldering on Saturday. You don't have to organise anything or think of anything to say — the thing you're doing does that.",
+   i:"slate"},
+  {t:"Six seats, five dollars",
+   p:"The money isn't a subscription, it covers the activity. It exists because free plans get flaked on, and a table of two strangers is the one outcome this is built to avoid.",
+   i:"seat"},
+  {t:"Confirm, then just turn up",
+   p:"A day before, one tap to confirm. Then the chat opens with the plan already in it and somebody named to say hello first.",
+   i:"clock"}
+];
+function showOnboarding(){
+  var idx=0, o=$("onb");
+  function draw(){
+    o.innerHTML="";
+    var body=el("div","body");
+    var ic=icon(ONB[idx].i,52); ic.style.color="var(--green)"; ic.setAttribute("stroke-width","1.6");
+    var art=el("div","art"); art.appendChild(ic); body.appendChild(art);
+    var h=el("h2",null,ONB[idx].t); h.id="onb-title"; body.appendChild(h);
+    body.appendChild(el("p",null,ONB[idx].p));
+    o.appendChild(body);
+    var dots=el("div","dotrow");
+    ONB.forEach(function(_,i){ dots.appendChild(el("span","d"+(i===idx?" on":""))); });
+    o.appendChild(dots);
+    var next=el("button","btn",idx<ONB.length-1?"Next":"Show me the week"); next.type="button";
+    next.addEventListener("click",function(){
+      if(idx<ONB.length-1){idx++;draw();}
+      else{ lsSet(LS_ONB,true); o.hidden=true; switchTab("slate"); }
+    });
+    o.appendChild(next);
+    o.setAttribute("tabindex","-1");
+    if(idx===0){
+      var skip=el("button","linkish","Skip"); skip.type="button";
+      skip.addEventListener("click",function(){lsSet(LS_ONB,true);o.hidden=true;});
+      o.appendChild(skip);
+    }
+    o.focus();
+  }
+  o.hidden=false; draw();
+}
+
+/* ============================================================ tabs */
 function switchTab(name){
   state.tab=name;
   ["slate","week","you"].forEach(function(t){
-    $("screen-"+t).hidden = (t!==name);
-    $("tab-"+t).setAttribute("aria-selected", String(t===name));
+    $("screen-"+t).hidden=(t!==name);
+    $("tab-"+t).setAttribute("aria-selected",String(t===name));
   });
   render();
-  window.scrollTo({top:0,behavior:"instant"});
+  try{window.scrollTo({top:0,behavior:"instant"});}catch(e){window.scrollTo(0,0);}
 }
-Array.prototype.forEach.call(document.querySelectorAll(".tabbar button"), function(b){
-  b.addEventListener("click", function(){ switchTab(b.dataset.tab); });
+Array.prototype.forEach.call(document.querySelectorAll(".tabbar button"),function(b){
+  b.addEventListener("click",function(){switchTab(b.dataset.tab);});
 });
-Array.prototype.forEach.call(document.querySelectorAll("#filters button"), function(b){
-  b.addEventListener("click", function(){
-    var k=b.dataset.f;
-    state.filters[k]=!state.filters[k];
-    b.setAttribute("aria-pressed", String(!!state.filters[k]));
-    lsSet(LS_FILTERS, state.filters);
-    renderSlate();
+Array.prototype.forEach.call(document.querySelectorAll("#filters button"),function(b){
+  b.addEventListener("click",function(){
+    var k=b.dataset.f; state.filters[k]=!state.filters[k];
+    b.setAttribute("aria-pressed",String(!!state.filters[k]));
+    lsSet(LS_FILTERS,state.filters); renderSlate();
   });
 });
 
-/* ============================================================
-   Boot
-   ============================================================ */
-var subscribed = {};
+/* ============================================================ boot */
+var subscribed={};
 function subscribeAll(){
   actColl().onSnapshot(function(snap){
-    state.activities = snap.docs.map(function(d){ var b=d.data()||{}; b.id=d.id; return b; })
-      .filter(function(a){ return a.startsAt && a.title; });
-    state.mode = isLocalStore ? "local" : "live";
+    state.activities=snap.docs.map(function(d){var b=d.data()||{};b.id=d.id;return b;})
+      .filter(function(a){return a.startsAt&&a.title;});
+    state.mode=isLocalStore?"local":"live";
     state.activities.forEach(function(a){
-      if(!subscribed[a.id]){
-        subscribed[a.id]=true;
-        seatColl(a.id).onSnapshot(function(s){
-          state.seats[a.id]=s.docs.map(function(d){ return d.data(); }).filter(function(x){ return x && x.seatNo; });
-          render(); maybePostBot(a);
-        }, function(e){ toast(dbFail(e), true); });
-        chatDoc(a.id).onSnapshot(function(d){
-          state.chats[a.id] = d.exists && d.data().messages ? d.data().messages : [];
-          refreshChatLog(a.id);
-          render();
-        });
-        signalColl(a.id).onSnapshot(function(s){
-          var m={}; s.docs.forEach(function(d){ m[d.id]=d.data(); });
-          state.signals[a.id]=m; render();
-        });
-      }
+      if(subscribed[a.id])return;
+      subscribed[a.id]=true;
+      seatColl(a.id).onSnapshot(function(s){
+        state.seats[a.id]=s.docs.map(function(d){return d.data();}).filter(function(x){return x&&x.seatNo;});
+        render(); maybePostBot(a);
+      },function(e){toast(dbFail(e),true);});
+      chatDoc(a.id).onSnapshot(function(d){
+        state.chats[a.id]=d.exists&&d.data().messages?d.data().messages:[];
+        refreshChatLog(a.id); render();
+      });
+      signalColl(a.id).onSnapshot(function(s){
+        var m={}; s.docs.forEach(function(d){m[d.id]=d.data();});
+        state.signals[a.id]=m; render();
+      });
     });
     render();
-  }, function(e){ toast(dbFail(e), true); state.mode="live"; render(); });
+  },function(e){toast(dbFail(e),true);state.mode=isLocalStore?"local":"live";render();});
 
   clockDoc().onSnapshot(function(d){
-    state.clockOffset = d.exists && typeof d.data().offsetMs==="number" ? d.data().offsetMs : 0;
+    state.clockOffset=d.exists&&typeof d.data().offsetMs==="number"?d.data().offsetMs:0;
     render();
   });
 }
-
 async function boot(){
-  state.me = lsGet(LS_ME, null);
-  state.filters = lsGet(LS_FILTERS, {});
-  Array.prototype.forEach.call(document.querySelectorAll("#filters button"), function(b){
-    b.setAttribute("aria-pressed", String(!!state.filters[b.dataset.f]));
+  state.me=lsGet(LS_ME,null);
+  state.filters=lsGet(LS_FILTERS,{});
+  state.sound=lsGet(LS_SOUND,true);
+  Array.prototype.forEach.call(document.querySelectorAll("#filters button"),function(b){
+    b.setAttribute("aria-pressed",String(!!state.filters[b.dataset.f]));
   });
   render();
+  if(!lsGet(LS_ONB,false)) showOnboarding();
 
   var db=null;
-  try{
-    if(window.claude && typeof window.claude.use==="function") db = await window.claude.use("db");
-  }catch(e){ db=null; }
-
+  try{ if(window.claude&&typeof window.claude.use==="function") db=await window.claude.use("db"); }
+  catch(e){ db=null; }
   if(db){ store=db; isLocalStore=false; state.mode="live"; }
   else { store=makeLocalStore(); isLocalStore=true; state.mode="local"; }
-
   subscribeAll();
-  setInterval(function(){ if(state.tab!=="you") render(); }, 30000);
+  setInterval(function(){ if(state.tab!=="you"&&$("veil").hidden) render(); },30000);
 }
-
 boot();
 })();
 </script>

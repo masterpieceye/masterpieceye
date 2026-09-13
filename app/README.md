@@ -23,6 +23,21 @@ claim a seat, confirm it, meet the table, give the post-hangout signal.
 - **Degradation.** If the `db` capability is unavailable the app runs against a local
   store with the same interface and says so in a banner, rather than breaking.
 
+## Making it usable
+
+- **Onboarding** — three cards on first open explaining the activity, the $5 and the
+  confirm step, replayable from the You tab.
+- **One-tap claiming** straight from the slate card; the card header opens detail.
+- **A "needs you now" banner** pinned to the top of the slate, showing the single most
+  pressing thing across everything you're booked into — confirm closing, table tonight,
+  check-in, signal — and doing it in one tap.
+- **Progress toward the floor** on every activity, so "2 more to confirm or it cancels"
+  is visible before you commit rather than discovered afterwards.
+- **Celebration screens** on claim, confirm and mutual match.
+- **A streak counted in weeks attended**, hidden until earned. No leaderboard.
+- **Run the whole loop** in the demo panel walks a fresh visitor through fill, confirm,
+  clock jump and signal in about a minute.
+
 ## What is not real, and is labelled as such in the app
 
 - Payment is simulated. No card is taken.

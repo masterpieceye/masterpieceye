@@ -58,3 +58,30 @@ how full is this, and am I in it.
 - Every destructive or irreversible action confirms, and says what it actually does.
 - Both themes are designed, not inverted. Every colour is a token declared on bare
   `:root` before any media query touches it.
+
+## Feel
+
+The product is about turning up to real things, so the reward system rewards
+turning up — not opening the app.
+
+- **Streak counts weeks you attended**, never days you opened. A daily streak would
+  nag people on a Tuesday when there is nothing for them, and would reward the wrong
+  behaviour. The chip stays hidden until it has something to say.
+- **No leaderboard, ever.** Ranking students by how socially active they are, on a
+  campus app, is cruel to exactly the person this is built for. This is a product
+  decision, not a backlog item, and it is stated in the app.
+- **Celebrations are screens, not toasts.** Claiming a seat, confirming, and a mutual
+  match each get a full moment with the table drawing, a short sound, and one button.
+  Toasts are for information; screens are for feeling something.
+- **Buttons press.** A 4px solid bottom edge that collapses on `:active`. It is the
+  cheapest possible tactility and it makes the whole app feel like it responds.
+- **Motion is short and purposeful**: sheets rise 26px, seats pop in when they fill,
+  celebration art rises once. Everything is disabled under `prefers-reduced-motion`.
+- **Sound only on real moments**, never on navigation, with a visible toggle.
+
+## Voice
+
+Plain, warm, and never cute. The app says what will happen and what it costs.
+"Miss it and the seat goes back" beats "Don't forget!". Nothing is exclamation-marked
+at the user, and nothing is hidden from them — the $5 non-refund, the 18+ line and
+the prototype's limits are all stated where they are relevant rather than buried.
