@@ -119,6 +119,28 @@ arrival state:
   the rest of the table a green dot next to your name. First to arrive gets told to
   grab a table; everyone after sees who is already there.
 
+## Matching on demand
+
+Press a button, get a group, agree a time between you — no weekly cycle.
+
+- **The signal is interests, not photos.** Each student carries likes, dislikes and
+  Discord servers. Pair score is `3x shared servers + 2x shared likes + 1x shared
+  dislikes - 1.5x clashes` (a like that is someone else's dislike). A narrow shared
+  server is the strongest signal there is; two people agreeing they hate karaoke is
+  real bonding; being seated in front of something you listed as a dislike is a cost.
+- **Discord linking is simulated**, and the app says so. A real build reads the server
+  list over OAuth and never shows it to anyone.
+- **The reveal names the overlap** - "Same Discord: MMU CS Year 1", "Both into:
+  Valorant, CS, coffee". That is the demo: the app shows its working instead of
+  asserting a match.
+- **The plan arrives filled in.** A match lands with a concrete what/when/where taken
+  from the soonest activity, and anyone can change it. Changing it resets everyone's
+  agreement, so nobody gets moved without saying yes. A blank "when works for you?" is
+  where four strangers go quiet; a default somebody must actively reject is not.
+
+Matching runs on the client that completes the pool, under the same ranked-and-claim
+pattern as seats. Blocked pairs are excluded before ranking.
+
 ## Not built yet
 
 Host briefing flow, a moderator's view of the report queue, and real `.edu`
