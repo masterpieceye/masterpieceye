@@ -1,4 +1,4 @@
-<title>Claim a Seat</title>
+<title>Lobby</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Public+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
 <style>
 :root{
@@ -345,6 +345,7 @@ svg{display:block}
 "use strict";
 
 var CAP=6, FLOOR=4, PRICE=5;
+var BUILD="Build 8 · 13 Sep 2026";
 var CONFIRM_OPEN_H=36, CONFIRM_CLOSE_H=24, EVENT_LEN_H=3;
 var LS_ME="lobby.me.v1", LS_FILTERS="lobby.filters.v1", LS_LOCAL="lobby.localdb.v1",
     LS_ONB="lobby.onb.v1", LS_SOUND="lobby.sound.v1";
@@ -1582,7 +1583,10 @@ function renderYou(){
    "The romantic signal is silent-unless-mutual in the interface, exactly as designed — but there's no server here, so storage isn't a real privacy boundary. In production that comparison happens server-side.",
    "There is no leaderboard and there never will be. Ranking students by how social they are would be cruel to the person this is built for."
   ].forEach(function(t){ ul.appendChild(el("li",null,t)); });
-  about.appendChild(ul); b.appendChild(about);
+  about.appendChild(ul);
+  var bd=el("p","foot",BUILD+" — if that isn't the build you were told about, you're on a cached copy.");
+  bd.style.marginTop="4px"; about.appendChild(bd);
+  b.appendChild(about);
 
   b.appendChild(demoPanel());
 }
