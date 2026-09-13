@@ -85,3 +85,11 @@ Plain, warm, and never cute. The app says what will happen and what it costs.
 "Miss it and the seat goes back" beats "Don't forget!". Nothing is exclamation-marked
 at the user, and nothing is hidden from them — the $5 non-refund, the 18+ line and
 the prototype's limits are all stated where they are relevant rather than buried.
+
+## Saying what the software did
+
+The seating pass is the only place the app makes a decision on the user's behalf, so
+it explains itself. The table sheet opens with **Why these people** in plain language:
+what the shared activity was, how the roster was split, and how many at the table are
+new to you. An algorithm that quietly decides who you spend an evening with and never
+says why is the thing people rightly distrust about matching apps.

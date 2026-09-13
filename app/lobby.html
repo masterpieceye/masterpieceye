@@ -266,6 +266,11 @@ svg{display:block}
   border:1.5px solid var(--clay);color:var(--clay);background:transparent}
 .demo button:active{background:var(--card)}
 
+.why{background:var(--card-2);border:1px solid var(--line-2);border-radius:12px;padding:13px 15px}
+.why .k{font-size:11px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-3);margin-bottom:5px}
+.why p{font-size:14px;color:var(--ink-2);line-height:1.5}
+.fence{border:1.5px solid var(--line);border-left:4px solid var(--clay);border-radius:12px;
+  padding:15px;display:flex;flex-direction:column;gap:9px;background:var(--card-2);margin-top:6px}
 .foot{font-size:12.5px;color:var(--ink-3);line-height:1.5}
 .switchrow{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line-2)}
 .switchrow:last-child{border-bottom:none}
@@ -341,8 +346,9 @@ var ICEBREAKERS=[
   "Two truths and a module you regret. Go."
 ];
 
-var state={ready:false,mode:"connecting",me:null,activities:[],seats:{},chats:{},signals:{},
+var state={ready:false,mode:"connecting",blocks:{},me:null,activities:[],seats:{},chats:{},signals:{},
   students:{},clockOffset:0,filters:{},tab:"slate",sound:true,seenSeats:{}};
+function capOf(a){ return (a&&a.capacity)||CAP; }
 
 /* ---------- utils ---------- */
 function $(id){return document.getElementById(id);}
@@ -482,7 +488,8 @@ var store=null, isLocalStore=false;
 function actColl(){return store.collection("activities");}
 function seatColl(id){return store.collection("activities/"+id+"/seats");}
 function seatDoc(id,n){return store.doc("activities/"+id+"/seats/s"+n);}
-function chatDoc(id){return store.doc("activities/"+id+"/chat/log");}
+function chatColl(id){return store.collection("activities/"+id+"/chat");}
+function chatDoc(id,t){return store.doc("activities/"+id+"/chat/t"+(t||1));}
 function signalColl(id){return store.collection("activities/"+id+"/signals");}
 function signalDoc(id,sid){return store.doc("activities/"+id+"/signals/"+sid);}
 function studentDoc(sid){return store.doc("students/"+sid);}
@@ -494,8 +501,10 @@ function takenSeats(id){return seatsOf(id).filter(function(s){return s&&s.studen
 function confirmedSeats(id){return takenSeats(id).filter(function(s){return s.confirmed;});}
 function mySeat(id){if(!state.me)return null;
   var m=takenSeats(id).filter(function(s){return s.studentId===state.me.id;});return m[0]||null;}
-function hostOf(id){
-  var c=confirmedSeats(id).slice().sort(function(a,b){return (a.claimedAt||0)-(b.claimedAt||0);});
+function hostOf(id,tableIdx){
+  var tb=seatingFor(id);
+  var t=tb[tableIdx==null?0:tableIdx]||[];
+  var c=t.slice().sort(function(a,b){return (a.claimedAt||0)-(b.claimedAt||0);});
   return c[0]||null;}
 function isCancelled(a){
   var p=phaseOf(a);
@@ -504,6 +513,106 @@ function isCancelled(a){
   return confirmedSeats(a.id).length<FLOOR;}
 function tableOpen(a){var p=phaseOf(a);
   return (p==="locked"||p==="running"||p==="done")&&!isCancelled(a);}
+function seedRand(str){
+  var h=hash(str)>>>0;
+  return function(){ h=h+0x6D2B79F5|0; var t=Math.imul(h^h>>>15,1|h);
+    t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; };
+}
+function tableCount(n){ if(n<=6)return 1; var k=Math.ceil(n/6); if(n/k<4&&k>1)k--; return k; }
+function isBlockedPair(x,y){
+  return !!(state.blocks[x+"__"+y]||state.blocks[y+"__"+x]);
+}
+/* have these two sat at the same table at an EARLIER activity? */
+function metBefore(actId,x,y){
+  var thisAct=state.activities.filter(function(a){return a.id===actId;})[0];
+  if(!thisAct)return false;
+  return state.activities.some(function(a){
+    if(a.id===actId||ts(a)>=ts(thisAct))return false;
+    var ids={}; confirmedSeats(a.id).forEach(function(s){ids[s.studentId]=1;});
+    if(!(ids[x]&&ids[y]))return false;
+    var tb=seatingFor(a.id), same=false;
+    tb.forEach(function(t){
+      var h={}; t.forEach(function(m){h[m.studentId]=1;});
+      if(h[x]&&h[y])same=true;
+    });
+    return same;
+  });
+}
+function mixPenalty(table){
+  var counts={}, known=0;
+  table.forEach(function(m){
+    var g=(state.students[m.studentId]||{}).group;
+    if(g){ counts[g]=(counts[g]||0)+1; known++; }
+  });
+  if(known<2)return 0;
+  var top=0; Object.keys(counts).forEach(function(k){ if(counts[k]>top)top=counts[k]; });
+  var allowed=Math.ceil(known/2);
+  return top>allowed ? (top-allowed)*1.5 : 0;
+}
+function tableCost(actId,table){
+  var c=mixPenalty(table);
+  for(var i=0;i<table.length;i++)for(var j=i+1;j<table.length;j++){
+    var x=table[i].studentId, y=table[j].studentId;
+    if(isBlockedPair(x,y)) c+=1000;
+    else if(metBefore(actId,x,y)) c+=3;
+  }
+  return c;
+}
+var seatingCache={};
+function seatingFor(actId){
+  var roster=confirmedSeats(actId).slice().sort(function(a,b){
+    return (a.claimedAt||0)-(b.claimedAt||0) || (a.studentId<b.studentId?-1:1);
+  });
+  var n=roster.length; if(!n)return [];
+  var key=actId+"|"+roster.map(function(r){return r.studentId;}).join(",")+"|"+Object.keys(state.blocks).join(",");
+  if(seatingCache[key])return seatingCache[key];
+  var k=tableCount(n), tables=[], i, j;
+  if(k===1){ tables=[roster]; seatingCache[key]=tables; return tables; }
+  var order=roster.slice(), rnd=seedRand(actId);
+  for(i=order.length-1;i>0;i--){ j=Math.floor(rnd()*(i+1)); var tmp=order[i];order[i]=order[j];order[j]=tmp; }
+  for(i=0;i<k;i++)tables.push([]);
+  var sizes=[]; for(i=0;i<k;i++) sizes.push(Math.floor(n/k)+(i<n%k?1:0));
+  var idx=0; for(i=0;i<k;i++)for(j=0;j<sizes[i];j++) tables[i].push(order[idx++]);
+  for(var pass=0;pass<40;pass++){
+    var improved=false;
+    for(var ta=0;ta<k;ta++)for(var tb=ta+1;tb<k;tb++)
+      for(var x=0;x<tables[ta].length;x++)for(var y=0;y<tables[tb].length;y++){
+        var before=tableCost(actId,tables[ta])+tableCost(actId,tables[tb]);
+        var A=tables[ta][x], B=tables[tb][y];
+        tables[ta][x]=B; tables[tb][y]=A;
+        var after=tableCost(actId,tables[ta])+tableCost(actId,tables[tb]);
+        if(after<before-1e-9){ improved=true; }
+        else { tables[ta][x]=A; tables[tb][y]=B; }
+      }
+    if(!improved)break;
+  }
+  seatingCache[key]=tables;
+  return tables;
+}
+function myTableIndex(actId){
+  if(!state.me)return -1;
+  var tb=seatingFor(actId);
+  for(var i=0;i<tb.length;i++)
+    for(var j=0;j<tb[i].length;j++)
+      if(tb[i][j].studentId===state.me.id)return i;
+  return -1;
+}
+function myTable(actId){
+  var i=myTableIndex(actId);
+  return i<0?[]:seatingFor(actId)[i];
+}
+/* the honest answer to "why am I sat with these people" */
+function whyThisTable(a){
+  var mine=myTable(a.id); if(mine.length<2)return null;
+  var tb=seatingFor(a.id);
+  var others=mine.filter(function(m){return m.studentId!==state.me.id;});
+  var fresh=others.filter(function(m){return !metBefore(a.id,state.me.id,m.studentId);}).length;
+  var bits=["You all chose "+a.title+" — that's the whole match"];
+  if(tb.length>1) bits.push(others.length+1+" of the "+confirmedSeats(a.id).length+" going are at your table, split so nobody is in a group of two");
+  if(fresh===others.length && others.length) bits.push("none of you have sat together before");
+  else if(fresh) bits.push(fresh+" of them you haven't met before");
+  return bits.join(". ")+".";
+}
 function myActivities(){
   if(!state.me)return [];
   return state.activities.filter(function(a){return !!mySeat(a.id);})
@@ -526,43 +635,62 @@ function stats(){
 }
 
 /* ---------- table figure ---------- */
-function tableFigure(actId,size,animate){
+function tableFigure(slots,size,animate,key){
   var ns="http://www.w3.org/2000/svg", w=size||110;
   var svg=document.createElementNS(ns,"svg");
   svg.setAttribute("viewBox","0 0 120 84"); svg.setAttribute("width",String(w));
   svg.setAttribute("height",String(Math.round(w*0.7))); svg.setAttribute("class","tablefig");
   svg.setAttribute("role","img");
-  var taken=takenSeats(actId), me=state.me;
-  svg.setAttribute("aria-label",taken.length+" of "+CAP+" seats taken");
+  var filled=slots.filter(function(x){return x;}).length;
+  svg.setAttribute("aria-label",filled+" of 6 seats at this table taken");
   var e=document.createElementNS(ns,"ellipse");
   e.setAttribute("cx","60");e.setAttribute("cy","42");e.setAttribute("rx","25");e.setAttribute("ry","15");
   e.setAttribute("class","surface");svg.appendChild(e);
-  var byNo={}; taken.forEach(function(s){byNo[s.seatNo]=s;});
-  var seen=state.seenSeats[actId]||{};
-  for(var i=0;i<CAP;i++){
-    var ang=(Math.PI*2*i/CAP)-Math.PI/2;
+  var prev=key?(state.seenSeats[key]||0):0;
+  for(var i=0;i<6;i++){
+    var ang=(Math.PI*2*i/6)-Math.PI/2;
     var cx=60+Math.cos(ang)*43, cy=42+Math.sin(ang)*31;
     var c=document.createElementNS(ns,"circle");
     c.setAttribute("cx",cx.toFixed(1));c.setAttribute("cy",cy.toFixed(1));c.setAttribute("r","7.5");
-    var s=byNo[i+1];
-    c.setAttribute("class",!s?"seat-empty":(me&&s.studentId===me.id?"seat-me":"seat-taken"));
-    if(s&&animate&&!seen[i+1]&&!reduced()){
+    c.setAttribute("class",!slots[i]?"seat-empty":(slots[i]==="me"?"seat-me":"seat-taken"));
+    if(slots[i]&&animate&&i>=prev&&!reduced()){
       c.classList.add("pop");
       c.style.transformOrigin=cx.toFixed(1)+"px "+cy.toFixed(1)+"px";
-      c.style.animationDelay=(i*0.05)+"s";
+      c.style.animationDelay=((i-prev)*0.05)+"s";
     }
     svg.appendChild(c);
   }
-  if(animate){ var mark={}; taken.forEach(function(s){mark[s.seatNo]=1;}); state.seenSeats[actId]=mark; }
+  if(key&&animate) state.seenSeats[key]=filled;
   return svg;
+}
+/* build the slots for an activity: your table if one exists, else the forming table */
+function figFor(a,size,animate){
+  var slots=[null,null,null,null,null,null], i;
+  var mine=tableOpen(a)?myTable(a.id):null;
+  if(mine&&mine.length){
+    for(i=0;i<Math.min(6,mine.length);i++)
+      slots[i]=(state.me&&mine[i].studentId===state.me.id)?"me":"other";
+  } else {
+    var taken=takenSeats(a.id);
+    if(taken.length<=6){
+      taken.forEach(function(t){
+        var idx=Math.max(0,Math.min(5,(t.seatNo||1)-1));
+        slots[idx]=(state.me&&t.studentId===state.me.id)?"me":"other";
+      });
+    } else {
+      for(i=0;i<6;i++) slots[i]="other";
+      if(mySeat(a.id)) slots[0]="me";
+    }
+  }
+  return tableFigure(slots,size,animate,a.id);
 }
 
 /* ============================================================ writes */
 async function claimSeat(a){
   if(!state.me){openJoinSheet(a);return;}
   if(mySeat(a.id)){toast("You already have a seat here.");return;}
-  if(takenSeats(a.id).length>=CAP){toast("That filled up while you were looking.",true);return;}
-  for(var n=1;n<=CAP;n++){
+  if(takenSeats(a.id).length>=capOf(a)){toast("That filled up while you were looking.",true);return;}
+  for(var n=1;n<=capOf(a);n++){
     var ref=seatDoc(a.id,n);
     try{
       var lease=await ref.acquire({holder:state.me.id,ttlMs:4000});
@@ -591,15 +719,15 @@ async function confirmSeat(a){
     ding("big"); celebrateConfirm(a);
   }catch(e){toast(dbFail(e),true);}
 }
-async function postMessage(actId,msg){
-  var ref=chatDoc(actId);
+async function postMessage(actId,msg,tableIdx){
+  var ref=chatDoc(actId,(tableIdx==null?myTableIndex(actId):tableIdx)+1);
   for(var i=0;i<4;i++){
     try{
       var lease=await ref.acquire({holder:state.me?state.me.id:"anon",ttlMs:3000});
       if(!lease.acquired){await sleep(200+Math.random()*300);continue;}
       var snap=await ref.get();
       var msgs=(snap.exists&&snap.data().messages)?snap.data().messages.slice():[];
-      if(msg.kind==="bot"&&msgs.some(function(m){return m.kind==="bot";}))return true;
+      if(msgs.some(function(m){return m.id===msg.id;}))return true;
       msgs.push(msg);
       await ref.set({messages:msgs.slice(-150)});
       return true;
@@ -610,15 +738,23 @@ async function postMessage(actId,msg){
 function hash(s){var h=0;for(var i=0;i<s.length;i++){h=((h<<5)-h)+s.charCodeAt(i);h|=0;}return h;}
 async function maybePostBot(a){
   if(!tableOpen(a))return;
-  var c=state.chats[a.id];
-  if(c&&c.some(function(m){return m.kind==="bot";}))return;
-  var host=hostOf(a.id); if(!host)return;
-  var pick=ICEBREAKERS[Math.abs(hash(a.id))%ICEBREAKERS.length];
-  await postMessage(a.id,{id:uid("m"),kind:"bot",by:"bot",name:"Lobby",
-    text:a.title+", "+fmtWhen(a)+", "+a.venue+". "+confirmedSeats(a.id).length+
-      " of you confirmed. "+host.name+" is hosting — they'll post when they arrive and where they're sitting.",
-    at:Date.now()});
-  await postMessage(a.id,{id:uid("m"),kind:"bot",by:"bot",name:"Lobby",text:pick,at:Date.now()+1});
+  var tb=seatingFor(a.id);
+  for(var i=0;i<tb.length;i++){
+    var log=(state.chats[a.id]||{})["t"+(i+1)]||[];
+    var host=hostOf(a.id,i); if(!host)continue;
+    var plan="bot-plan-"+a.id+"-"+i, ice="bot-ice-"+a.id+"-"+i;
+    if(!log.some(function(m){return m.id===plan;})){
+      await postMessage(a.id,{id:plan,kind:"bot",by:"bot",name:"Lobby",
+        text:a.title+", "+fmtWhen(a)+", "+a.venue+
+          (tb.length>1?" — table "+(i+1)+" of "+tb.length:"")+". "+tb[i].length+
+          " of you. "+host.name+" is hosting: they'll post when they arrive and where they're sitting.",
+        at:Date.now()},i);
+    }
+    if(!log.some(function(m){return m.id===ice;})){
+      await postMessage(a.id,{id:ice,kind:"bot",by:"bot",name:"Lobby",
+        text:ICEBREAKERS[Math.abs(hash(a.id+i))%ICEBREAKERS.length],at:Date.now()+1},i);
+    }
+  }
 }
 async function saveCheckin(a,madeIt,note){
   try{
@@ -683,9 +819,9 @@ function showCelebrate(build){
 }
 function closeCelebrate(){ $("celebrate").hidden=true; render(); }
 
-function celebrateBase(c,artActId,title,body,actions){
+function celebrateBase(c,act,title,body,actions){
   var art=el("div","art");
-  art.appendChild(tableFigure(artActId,190,false));
+  art.appendChild(figFor(act,190,false));
   c.appendChild(art);
   var h=el("h2",null,title); h.id="celebrate-title"; c.appendChild(h);
   c.appendChild(el("p",null,body));
@@ -701,7 +837,7 @@ function celebrateClaim(a,n){
     var opens=confirmOpensAt(a)-now();
     var next = opens>0 ? "We'll nudge you in "+fmtLeft(opens)+" to confirm. One tap then and you're locked in."
                        : "Confirm it now and you're locked in.";
-    celebrateBase(c,a.id,"Seat "+n+" is yours",
+    celebrateBase(c,a,"Seat "+n+" is yours",
       a.title+", "+fmtWhen(a)+". "+next,
       [{label:"Got it",fn:function(){closeCelebrate();switchTab("week");}}]);
   });
@@ -712,13 +848,13 @@ function celebrateConfirm(a){
     var body = a.kind==="booked"
       ? conf+" of "+takenSeats(a.id).length+" confirmed. This one needs "+FLOOR+" or it cancels and refunds — you'll know a day early either way."
       : conf+" confirmed so far. This one's drop-in, so it runs regardless.";
-    celebrateBase(c,a.id,"You're in",body,[{label:"Nice",fn:closeCelebrate}]);
+    celebrateBase(c,a,"You're in",body,[{label:"Nice",fn:closeCelebrate}]);
   });
 }
 function celebrateSignal(a){
   var sigs=state.signals[a.id]||{}, mine=sigs[state.me.id];
   var fm=[],rm=[];
-  takenSeats(a.id).forEach(function(s){
+  myTable(a.id).forEach(function(s){
     if(s.studentId===state.me.id)return;
     var th=sigs[s.studentId]; if(!th)return;
     if((mine.friends||[]).indexOf(s.studentId)>=0&&(th.friends||[]).indexOf(state.me.id)>=0)fm.push(s.name);
@@ -726,11 +862,14 @@ function celebrateSignal(a){
   });
   if(rm.length) ding("big"); else if(fm.length) ding();
   showCelebrate(function(c){
-    var title, body;
-    if(rm.length){ title="Mutual"; body=rm.join(" and ")+" picked you back. Whatever you do next, do it somewhere public and tell a friend where you're going — that part happens off the app."; }
-    else if(fm.length){ title="You've got people"; body=fm.join(", ")+" want to do something again too. The chat stays open."; }
-    else { title="Saved"; body="Nothing mutual this time — and nobody is ever told they weren't picked, including you just now. It stays silent both ways."; }
-    celebrateBase(c,a.id,title,body,[{label:"Done",fn:closeCelebrate}]);
+    var title, parts=[];
+    if(fm.length) parts.push(fm.join(", ")+(fm.length>1?" want":" wants")+" to do something again too — the chat stays open.");
+    if(rm.length) parts.push(rm.join(" and ")+" picked you back the other way. Somewhere public, and tell a friend where you're going — that part happens off the app.");
+    if(rm.length) title="Mutual";
+    else if(fm.length) title="You've got people";
+    else { title="Saved"; parts=["Nothing mutual this time — and nobody is ever told they weren't picked, including you just now. It stays silent both ways."]; }
+    var body=parts.join(" ");
+    celebrateBase(c,a,title,body,[{label:"Done",fn:closeCelebrate}]);
   });
 }
 
@@ -806,7 +945,7 @@ function makeEmpty(h,p){
 function progressBar(a){
   var conf=confirmedSeats(a.id).length, taken=takenSeats(a.id).length;
   var booked=a.kind==="booked";
-  var cur=booked?conf:taken, max=booked?FLOOR:CAP;
+  var cur=booked?conf:taken, max=booked?FLOOR:capOf(a);
   var box=el("div","prog");
   var track=el("div","track"), fill=el("div","fill"+(booked&&conf<FLOOR?" gold":""));
   fill.style.width=Math.min(100,(cur/max)*100)+"%";
@@ -817,10 +956,11 @@ function progressBar(a){
     left.innerHTML = conf>=FLOOR ? "<b>Going ahead</b> — "+conf+" confirmed"
       : "<b>"+(FLOOR-conf)+" more</b> to confirm or it cancels";
   } else {
-    left.innerHTML = "<b>"+taken+" of "+CAP+"</b> seats taken";
+    left.innerHTML = "<b>"+taken+" of "+capOf(a)+"</b> seats taken";
   }
   cap.appendChild(left);
-  cap.appendChild(el("span",null,booked?"booked table":"drop-in"));
+  var tc=tableCount(Math.max(conf,taken));
+  cap.appendChild(el("span",null,(tc>1?tc+" tables · ":"")+(booked?"booked":"drop-in")));
   box.appendChild(cap);
   return box;
 }
@@ -837,6 +977,7 @@ function renderSlate(){
   if(state.mode==="connecting"){ list.appendChild(makeEmpty("Loading the slate…","One moment.")); return; }
   var keys=Object.keys(state.filters).filter(function(k){return state.filters[k];});
   var vis=state.activities.filter(function(a){
+    if(phaseOf(a)==="done")return false;
     return keys.every(function(k){return (a.attrs||[]).indexOf(k)>=0;});
   }).sort(function(x,y){return ts(x)-ts(y);});
 
@@ -845,8 +986,11 @@ function renderSlate(){
     $("slate-sub").textContent=""; return;
   }
   if(!vis.length){
-    list.appendChild(makeEmpty("Nothing matches those","If one filter empties the whole week, the week was badly programmed. That's on us."));
-    return;
+    var anyFilter=keys.length>0;
+    list.appendChild(anyFilter
+      ? makeEmpty("Nothing matches those","If one filter empties the whole week, the week was badly programmed. That's on us.")
+      : makeEmpty("This week is done","Everything on the slate has already happened. The next one goes up Sunday evening."));
+    $("slate-sub").textContent=""; return;
   }
   $("slate-sub").textContent = vis.length+" "+(vis.length===1?"thing":"things") +
     " on. Six seats each, $5, and it runs whether or not you know anyone.";
@@ -866,7 +1010,7 @@ function activityCard(a){
   (a.attrs||[]).forEach(function(t){ if(map[t])chips.appendChild(el("span","chip "+map[t][1],map[t][0])); });
   txt.appendChild(chips);
   row.appendChild(txt);
-  var fig=el("div","fig"); fig.appendChild(tableFigure(a.id,100,true)); row.appendChild(fig);
+  var fig=el("div","fig"); fig.appendChild(figFor(a,100,true)); row.appendChild(fig);
   card.appendChild(row);
 
   var foot=el("div","foot");
@@ -912,12 +1056,25 @@ function renderWeek(){
     pr.style.marginTop="9px"; sBox.appendChild(pr);
   }
 
-  var mine=myActivities();
+  var mine=myActivities().slice().sort(function(x,y){
+    var r=weekRank(x)-weekRank(y); return r!==0?r:ts(x)-ts(y);
+  });
   if(!mine.length){
     list.appendChild(makeEmpty("No seats this week","The slate's on the first tab. You can take a seat right up until 36 hours before."));
     return;
   }
   mine.forEach(function(a){ list.appendChild(weekCard(a)); });
+}
+function weekRank(a){
+  var ph=phaseOf(a), s=mySeat(a.id);
+  if(isCancelled(a))return 6;
+  if(ph==="confirming"&&s&&!s.confirmed)return 0;
+  if(ph==="done"&&s&&s.confirmed&&!myCheckin(a))return 1;
+  if(ph==="done"&&s&&s.confirmed&&myCheckin(a)&&myCheckin(a).madeIt&&!mySignal(a))return 1;
+  if(ph==="running")return 2;
+  if(ph==="locked")return 3;
+  if(ph==="open"||ph==="confirming")return 4;
+  return 5;
 }
 function weekCard(a){
   var card=el("div","card pad stackv");
@@ -927,7 +1084,7 @@ function weekCard(a){
   var w=el("div",null,fmtWhen(a)+" · "+a.venue);
   w.style.cssText="font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:var(--ink-2);margin-top:5px";
   t.appendChild(w); row.appendChild(t);
-  var f=el("div"); f.style.marginLeft="auto"; f.appendChild(tableFigure(a.id,96,true)); row.appendChild(f);
+  var f=el("div"); f.style.marginLeft="auto"; f.appendChild(figFor(a,96,true)); row.appendChild(f);
   card.appendChild(row);
 
   var ph=phaseOf(a), s=mySeat(a.id);
@@ -937,7 +1094,7 @@ function weekCard(a){
       ". You found out a day early rather than at the table.";
     card.appendChild(n); return card;
   }
-  card.appendChild(progressBar(a));
+  if(ph!=="done") card.appendChild(progressBar(a));
 
   if(ph==="open"){
     var st=el("div","chips");
@@ -962,7 +1119,7 @@ function weekCard(a){
       lost.innerHTML="<b>You didn't confirm, so the seat went back.</b> The table is running without you.";
       card.appendChild(lost); return card;
     }
-    var host=hostOf(a.id), amHost=host&&state.me&&host.studentId===state.me.id;
+    var host=hostOf(a.id,myTableIndex(a.id)), amHost=host&&state.me&&host.studentId===state.me.id;
     if(amHost){
       var hn=el("div","note");
       hn.innerHTML="<b>You're hosting.</b> Post when you arrive and where you're sitting. Your seat was free.";
@@ -992,7 +1149,7 @@ function resultPanel(a){
   var sigs=state.signals[a.id]||{}, mine=sigs[state.me.id];
   if(!mine){ box.appendChild(makeEmpty("Nothing recorded","You skipped the signal for this one.")); return box; }
   var fm=[],rm=[];
-  takenSeats(a.id).forEach(function(s){
+  myTable(a.id).forEach(function(s){
     if(s.studentId===state.me.id)return;
     var th=sigs[s.studentId]; if(!th)return;
     if((mine.friends||[]).indexOf(s.studentId)>=0&&(th.friends||[]).indexOf(state.me.id)>=0)fm.push(s.name);
@@ -1039,6 +1196,24 @@ function renderYou(){
       pick.appendChild(pb);
     });
     ic.appendChild(pick); b.appendChild(ic);
+
+    var gc=el("div","card pad stackv");
+    var gh=el("h3",null,"Table mixing"); gh.style.cssText="font-size:18px;font-weight:600"; gc.appendChild(gh);
+    var gp=el("p",null,"Optional, private, never shown to anyone. Seating uses it for one thing: nudging tables away from being all one group. Never a filter, never a quota — a table seats as it seats.");
+    gp.style.cssText="font-size:14px;color:var(--ink-2)"; gc.appendChild(gp);
+    var gpick=el("div","pick");
+    var cur=(state.students[state.me.id]||{}).group||"";
+    [["","Prefer not to say"],["w","Woman"],["m","Man"],["n","Non-binary"]].forEach(function(o){
+      var gb=el("button","pickbtn",o[1]); gb.type="button";
+      gb.setAttribute("aria-pressed",String(cur===o[0]));
+      gb.addEventListener("click",async function(){
+        try{ await studentDoc(state.me.id).update({group:o[0]}); seatingCache={}; toast("Saved. Nobody sees this."); }
+        catch(e){ toast(dbFail(e),true); }
+        renderYou();
+      });
+      gpick.appendChild(gb);
+    });
+    gc.appendChild(gpick); b.appendChild(gc);
   }
 
   var pref=el("div","card pad");
@@ -1111,11 +1286,11 @@ function nextActivity(){
 async function fillTable(){
   var a=nextActivity(); if(!a){toast("No activities to fill.",true);return;}
   var names=["Priya","Marcus","Dani","Yusuf","Lena","Theo","Ama","Jonas","Nadia","Kwame"];
-  var free=CAP-takenSeats(a.id).length;
+  var free=capOf(a)-takenSeats(a.id).length;
   if(free<=0){toast(a.title+" is already full.");return;}
   for(var i=0;i<free;i++){
     var sid=uid("demo"), nm=names[Math.floor(Math.random()*names.length)];
-    for(var n=1;n<=CAP;n++){
+    for(var n=1;n<=capOf(a);n++){
       var ref=seatDoc(a.id,n);
       try{
         var l=await ref.acquire({holder:sid,ttlMs:3000});
@@ -1204,7 +1379,7 @@ function openActivitySheet(a){
   openSheet(function(s){
     sheetHead(s,a.title,fmtWhen(a)+" · "+a.venue);
     var f=el("div"); f.style.cssText="display:grid;place-items:center";
-    f.appendChild(tableFigure(a.id,170,false)); s.appendChild(f);
+    f.appendChild(figFor(a,170,false)); s.appendChild(f);
     if(a.blurb){var p=el("p",null,a.blurb);p.style.cssText="font-size:15px;color:var(--ink-2);line-height:1.55";s.appendChild(p);}
     s.appendChild(progressBar(a));
     var ph=phaseOf(a), mine=mySeat(a.id), full=takenSeats(a.id).length>=CAP;
@@ -1280,11 +1455,13 @@ function openJoinSheet(a){
 }
 
 function refreshChatLog(actId){
-  var log=$("chat-log");
-  if(!log||log.dataset.act!==actId)return;
+  var log=$("chat-log"); if(!log)return;
+  var parts=String(log.dataset.act||"").split("|");
+  if(parts[0]!==actId)return;
+  var msgs=((state.chats[actId]||{})["t"+((parseInt(parts[1],10)||0)+1)])||[];
   var keep=log.scrollTop+log.clientHeight>=log.scrollHeight-40;
   log.innerHTML="";
-  (state.chats[actId]||[]).forEach(function(m){log.appendChild(chatBubble(m));});
+  msgs.forEach(function(m){log.appendChild(chatBubble(m));});
   if(keep)log.scrollTop=log.scrollHeight;
 }
 function chatBubble(m){
@@ -1296,16 +1473,22 @@ function chatBubble(m){
 }
 function openTableSheet(a){
   openSheet(function(s){
-    var host=hostOf(a.id);
-    sheetHead(s,"Your table",a.title+" · "+fmtWhen(a)+" · "+a.venue);
+    var ti=myTableIndex(a.id), tb=seatingFor(a.id);
+    var host=hostOf(a.id,ti<0?0:ti);
+    var mine=ti<0?(tb[0]||[]):tb[ti];
+    sheetHead(s,tb.length>1?"Table "+(ti+1)+" of "+tb.length:"Your table",
+      a.title+" · "+fmtWhen(a)+" · "+a.venue);
+    var why=whyThisTable(a);
+    if(why){ var wn=el("div","why"); wn.appendChild(el("div","k","Why these people"));
+      wn.appendChild(el("p",null,why)); s.appendChild(wn); }
     var roster=el("div","roster");
-    confirmedSeats(a.id).sort(function(x,y){return (x.claimedAt||0)-(y.claimedAt||0);}).forEach(function(p){
+    mine.slice().sort(function(x,y){return (x.claimedAt||0)-(y.claimedAt||0);}).forEach(function(p){
       var row=el("div","person");
       var isMe=state.me&&p.studentId===state.me.id;
       row.appendChild(el("div","avatar"+(isMe?" me":""),initials(p.name)));
       var box=el("div");
       box.appendChild(el("div","nm",p.name+(isMe?" (you)":"")));
-      box.appendChild(el("div","rl",host&&host.studentId===p.studentId?"host · seat free":"seat "+p.seatNo));
+      box.appendChild(el("div","rl",host&&host.studentId===p.studentId?"host · seat free":"also here"));
       row.appendChild(box);
       if(!isMe&&state.me){
         var m=el("button","dots end","⋯"); m.type="button";
@@ -1321,8 +1504,8 @@ function openTableSheet(a){
       hn.innerHTML="<b>You're hosting.</b> Two things: post when you arrive and where you're sitting, and if anything feels off, tap the ⋯ — you escalate, you don't have to handle it.";
       s.appendChild(hn);
     }
-    var chat=el("div","chat"); chat.id="chat-log"; chat.dataset.act=a.id;
-    var msgs=state.chats[a.id]||[];
+    var chat=el("div","chat"); chat.id="chat-log"; chat.dataset.act=a.id+"|"+(ti<0?0:ti);
+    var msgs=((state.chats[a.id]||{})["t"+((ti<0?0:ti)+1)])||[];
     if(!msgs.length) chat.appendChild(makeEmpty("Chat opens when the table locks","Nobody has to go first — the bot posts the plan, then a couple of questions."));
     msgs.forEach(function(m){chat.appendChild(chatBubble(m));});
     s.appendChild(chat);
@@ -1366,7 +1549,7 @@ function openCheckinSheet(a){
 }
 
 function openSignalSheet(a){
-  var roster=confirmedSeats(a.id).filter(function(p){return !state.me||p.studentId!==state.me.id;});
+  var roster=myTable(a.id).filter(function(p){return !state.me||p.studentId!==state.me.id;});
   var friends=[], romantic=[];
   openSheet(function(s){
     sheetHead(s,"After "+a.title,null);
@@ -1376,11 +1559,13 @@ function openSignalSheet(a){
     p1.style.cssText="font-size:14px;color:var(--ink-2)"; s.appendChild(p1);
     s.appendChild(pickList(roster,friends));
     if(state.me&&state.me.intent==="open"){
+      var box=el("div","fence");
       var h2=el("h3",null,"And separately — anyone one-on-one?");
-      h2.style.cssText="font-size:18px;font-weight:600;margin-top:8px"; s.appendChild(h2);
-      var p2=el("p",null,"Same rule, stricter: silent unless mutual, and only ever mutual between two people who both said they were open to this.");
-      p2.style.cssText="font-size:14px;color:var(--ink-2)"; s.appendChild(p2);
-      s.appendChild(pickList(roster,romantic));
+      h2.style.cssText="font-size:18px;font-weight:600"; box.appendChild(h2);
+      var p2=el("p",null,"A different question, asked only because you said you were open to it. Silent unless mutual, and only ever between two people who both said the same.");
+      p2.style.cssText="font-size:14px;color:var(--ink-2)"; box.appendChild(p2);
+      box.appendChild(pickList(roster,romantic));
+      s.appendChild(box);
     }
     var save=el("button","btn","Done"); save.type="button";
     save.addEventListener("click",function(){saveSignal(a,friends,romantic);});
@@ -1484,9 +1669,9 @@ function subscribeAll(){
         state.seats[a.id]=s.docs.map(function(d){return d.data();}).filter(function(x){return x&&x.seatNo;});
         render(); maybePostBot(a);
       },function(e){toast(dbFail(e),true);});
-      chatDoc(a.id).onSnapshot(function(d){
-        state.chats[a.id]=d.exists&&d.data().messages?d.data().messages:[];
-        refreshChatLog(a.id); render();
+      chatColl(a.id).onSnapshot(function(cs){
+        var m={}; cs.docs.forEach(function(d){ m[d.id]=(d.data()||{}).messages||[]; });
+        state.chats[a.id]=m; refreshChatLog(a.id); render();
       });
       signalColl(a.id).onSnapshot(function(s){
         var m={}; s.docs.forEach(function(d){m[d.id]=d.data();});
@@ -1496,6 +1681,14 @@ function subscribeAll(){
     render();
   },function(e){toast(dbFail(e),true);state.mode=isLocalStore?"local":"live";render();});
 
+  store.collection("blocks").onSnapshot(function(bs){
+    var m={}; bs.docs.forEach(function(d){ m[d.id]=d.data(); });
+    state.blocks=m; seatingCache={}; render();
+  });
+  store.collection("students").onSnapshot(function(ss){
+    var m={}; ss.docs.forEach(function(d){ m[d.id]=d.data(); });
+    state.students=m; seatingCache={}; render();
+  });
   clockDoc().onSnapshot(function(d){
     state.clockOffset=d.exists&&typeof d.data().offsetMs==="number"?d.data().offsetMs:0;
     render();
