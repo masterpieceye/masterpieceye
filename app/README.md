@@ -18,9 +18,12 @@ claim a seat, confirm it, meet the table, give the post-hangout signal.
   a seeded shuffle plus local-search swaps, so every client computes the same tables
   and no write is needed. It minimises a cost over each table -
   blocked pairs are effectively forbidden, pairs who have already sat together cost 3,
-  and a table skewed to one group costs 1.5 per person over half. That is the whole
-  matching engine, and the app tells each person what it did in a "why these people"
-  panel rather than leaving it invisible.
+  and a table skewed to one group costs 1.5 per person over half. Blocking is a hard
+  rule, not a weight: after the search, a repair pass pulls apart any blocked pair that
+  survived. Seating for the whole week is solved in one chronological pass, so
+  "have these two met before" is a map lookup rather than a recursive re-solve of every
+  earlier activity. That is the whole matching engine, and the app tells each person
+  what it did in a "why these people" panel rather than leaving it invisible.
 - **Time-derived phases.** `open → confirming → locked → running → done` is computed
   from the activity's start time, not stored — so there is no scheduler to drift.
   Cancellation is likewise derived: a *booked* activity under four confirmed is

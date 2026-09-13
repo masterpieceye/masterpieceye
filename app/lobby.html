@@ -445,40 +445,60 @@ function fmtLeft(ms){
 }
 
 /* ---------- store ---------- */
-var localSubs=[];
-function localData(){return lsGet(LS_LOCAL,{});}
-function localWrite(m){lsSet(LS_LOCAL,m);localSubs.forEach(function(f){try{f();}catch(e){}});}
+var localSubs=[], localMem=null, localSaveTimer=null, localDirty=false;
+function localData(){ if(!localMem) localMem=lsGet(LS_LOCAL,{}); return localMem; }
+/* only ever write back what THIS page changed, so a second tab is never clobbered */
+function flushLocal(){ if(localDirty&&localMem){ lsSet(LS_LOCAL,localMem); localDirty=false; } }
+function localWrite(m,path){
+  localMem=m; localDirty=true;
+  clearTimeout(localSaveTimer);
+  localSaveTimer=setTimeout(flushLocal,200);
+  localSubs.forEach(function(sub){
+    try{ if(!path||sub.match(path)) sub.fire(); }catch(e){}
+  });
+}
+window.addEventListener("pagehide",flushLocal);
+document.addEventListener("visibilitychange",function(){ if(document.hidden) flushLocal(); });
+function addLocalSub(match,fire){
+  var sub={match:match,fire:fire};
+  localSubs.push(sub); fire();
+  return function(){ var i=localSubs.indexOf(sub); if(i>=0)localSubs.splice(i,1); };
+}
 function makeLocalStore(){
+  function snapOf(path){
+    var m=localData();
+    return {id:path.split("/").pop(),
+      exists:Object.prototype.hasOwnProperty.call(m,path),
+      data:function(){return m[path];}};
+  }
   function docRef(path){
     return {path:path,
-      get:function(){var m=localData();return Promise.resolve({id:path.split("/").pop(),
-        exists:Object.prototype.hasOwnProperty.call(m,path),data:function(){return m[path];}});},
-      set:function(b){var m=localData();m[path]=JSON.parse(JSON.stringify(b));localWrite(m);return Promise.resolve();},
-      update:function(b){var m=localData();if(!Object.prototype.hasOwnProperty.call(m,path))
-        return Promise.reject({code:"invalid_argument",message:"no such document"});
-        Object.keys(b).forEach(function(k){m[path][k]=b[k];});localWrite(m);return Promise.resolve();},
-      "delete":function(){var m=localData();delete m[path];localWrite(m);return Promise.resolve();},
+      get:function(){return Promise.resolve(snapOf(path));},
+      set:function(b){var m=localData();m[path]=JSON.parse(JSON.stringify(b));localWrite(m,path);return Promise.resolve();},
+      update:function(b){var m=localData();
+        if(!Object.prototype.hasOwnProperty.call(m,path))
+          return Promise.reject({code:"invalid_argument",message:"no such document"});
+        Object.keys(b).forEach(function(k){m[path][k]=b[k];});localWrite(m,path);return Promise.resolve();},
+      "delete":function(){var m=localData();delete m[path];localWrite(m,path);return Promise.resolve();},
       acquire:function(){return Promise.resolve({acquired:true});},
       onSnapshot:function(next){
-        var fire=function(){var m=localData();next({id:path.split("/").pop(),
-          exists:Object.prototype.hasOwnProperty.call(m,path),data:function(){return m[path];}});};
-        localSubs.push(fire);fire();
-        return function(){var i=localSubs.indexOf(fire);if(i>=0)localSubs.splice(i,1);};}
+        return addLocalSub(function(p){return p===path;},function(){next(snapOf(path));});}
     };
   }
   function collRef(path){
+    function inColl(k){
+      return k.indexOf(path+"/")===0 && k.slice(path.length+1).indexOf("/")===-1;
+    }
     function match(){var m=localData(),out=[];
       Object.keys(m).forEach(function(k){
-        if(k.indexOf(path+"/")===0&&k.slice(path.length+1).indexOf("/")===-1)
-          out.push({id:k.split("/").pop(),exists:true,data:(function(b){return function(){return b;};})(m[k])});
+        if(inColl(k)) out.push({id:k.split("/").pop(),exists:true,
+          data:(function(b){return function(){return b;};})(m[k])});
       });out.sort(function(a,b){return a.id<b.id?-1:1;});return out;}
     return {path:path,
       doc:function(id){return docRef(path+"/"+(id||uid("d")));},
       get:function(){var d=match();return Promise.resolve({docs:d,size:d.length,empty:!d.length});},
       onSnapshot:function(next){
-        var fire=function(){var d=match();next({docs:d,size:d.length,empty:!d.length});};
-        localSubs.push(fire);fire();
-        return function(){var i=localSubs.indexOf(fire);if(i>=0)localSubs.splice(i,1);};}
+        return addLocalSub(inColl,function(){var d=match();next({docs:d,size:d.length,empty:!d.length});});}
     };
   }
   return {doc:docRef,collection:collRef};
@@ -519,24 +539,20 @@ function seedRand(str){
     t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; };
 }
 function tableCount(n){ if(n<=6)return 1; var k=Math.ceil(n/6); if(n/k<4&&k>1)k--; return k; }
-function isBlockedPair(x,y){
-  return !!(state.blocks[x+"__"+y]||state.blocks[y+"__"+x]);
-}
-/* have these two sat at the same table at an EARLIER activity? */
-function metBefore(actId,x,y){
-  var thisAct=state.activities.filter(function(a){return a.id===actId;})[0];
-  if(!thisAct)return false;
-  return state.activities.some(function(a){
-    if(a.id===actId||ts(a)>=ts(thisAct))return false;
-    var ids={}; confirmedSeats(a.id).forEach(function(s){ids[s.studentId]=1;});
-    if(!(ids[x]&&ids[y]))return false;
-    var tb=seatingFor(a.id), same=false;
-    tb.forEach(function(t){
-      var h={}; t.forEach(function(m){h[m.studentId]=1;});
-      if(h[x]&&h[y])same=true;
-    });
-    return same;
-  });
+function isBlockedPair(x,y){ return !!(state.blocks[x+"__"+y]||state.blocks[y+"__"+x]); }
+function pairKey(x,y){ return x<y ? x+"|"+y : y+"|"+x; }
+
+/* Seating is computed for the WHOLE week in one chronological pass, so
+   "have these two met before" is a map lookup rather than a recursive
+   re-solve of every earlier activity. Recomputing lazily on any change
+   that could move someone. */
+var seatBook=null;                 // {tables:{actId:[[seat]]}, met:{pair:actIndex}, order:{actId:idx}}
+function markSeatingDirty(){ seatBook=null; }
+
+function hasBlockedPair(t){
+  for(var i=0;i<t.length;i++)for(var j=i+1;j<t.length;j++)
+    if(isBlockedPair(t[i].studentId,t[j].studentId))return true;
+  return false;
 }
 function mixPenalty(table){
   var counts={}, known=0;
@@ -549,45 +565,85 @@ function mixPenalty(table){
   var allowed=Math.ceil(known/2);
   return top>allowed ? (top-allowed)*1.5 : 0;
 }
-function tableCost(actId,table){
+function tableCost(table,met,idx){
   var c=mixPenalty(table);
   for(var i=0;i<table.length;i++)for(var j=i+1;j<table.length;j++){
     var x=table[i].studentId, y=table[j].studentId;
     if(isBlockedPair(x,y)) c+=1000;
-    else if(metBefore(actId,x,y)) c+=3;
+    else { var seen=met[pairKey(x,y)]; if(seen!=null&&seen<idx) c+=3; }
   }
   return c;
 }
-var seatingCache={};
-function seatingFor(actId){
+/* pull one member of a blocked pair onto another table; returns true if it moved */
+function repairBlocked(tables){
+  for(var t1=0;t1<tables.length;t1++){
+    if(!hasBlockedPair(tables[t1]))continue;
+    for(var x=0;x<tables[t1].length;x++){
+      for(var t2=0;t2<tables.length;t2++){
+        if(t2===t1)continue;
+        for(var y=0;y<tables[t2].length;y++){
+          var A=tables[t1][x], B=tables[t2][y];
+          tables[t1][x]=B; tables[t2][y]=A;
+          if(!hasBlockedPair(tables[t1])&&!hasBlockedPair(tables[t2]))return true;
+          tables[t1][x]=A; tables[t2][y]=B;
+        }
+      }
+    }
+  }
+  return false;
+}
+function computeSeating(actId,met,idx){
   var roster=confirmedSeats(actId).slice().sort(function(a,b){
     return (a.claimedAt||0)-(b.claimedAt||0) || (a.studentId<b.studentId?-1:1);
   });
   var n=roster.length; if(!n)return [];
-  var key=actId+"|"+roster.map(function(r){return r.studentId;}).join(",")+"|"+Object.keys(state.blocks).join(",");
-  if(seatingCache[key])return seatingCache[key];
   var k=tableCount(n), tables=[], i, j;
-  if(k===1){ tables=[roster]; seatingCache[key]=tables; return tables; }
+  if(k===1)return [roster];
   var order=roster.slice(), rnd=seedRand(actId);
   for(i=order.length-1;i>0;i--){ j=Math.floor(rnd()*(i+1)); var tmp=order[i];order[i]=order[j];order[j]=tmp; }
   for(i=0;i<k;i++)tables.push([]);
   var sizes=[]; for(i=0;i<k;i++) sizes.push(Math.floor(n/k)+(i<n%k?1:0));
-  var idx=0; for(i=0;i<k;i++)for(j=0;j<sizes[i];j++) tables[i].push(order[idx++]);
-  for(var pass=0;pass<40;pass++){
+  var at=0; for(i=0;i<k;i++)for(j=0;j<sizes[i];j++) tables[i].push(order[at++]);
+  for(var pass=0;pass<12;pass++){
     var improved=false;
     for(var ta=0;ta<k;ta++)for(var tb=ta+1;tb<k;tb++)
-      for(var x=0;x<tables[ta].length;x++)for(var y=0;y<tables[tb].length;y++){
-        var before=tableCost(actId,tables[ta])+tableCost(actId,tables[tb]);
-        var A=tables[ta][x], B=tables[tb][y];
-        tables[ta][x]=B; tables[tb][y]=A;
-        var after=tableCost(actId,tables[ta])+tableCost(actId,tables[tb]);
-        if(after<before-1e-9){ improved=true; }
-        else { tables[ta][x]=A; tables[tb][y]=B; }
+      for(var xi=0;xi<tables[ta].length;xi++)for(var yi=0;yi<tables[tb].length;yi++){
+        var before=tableCost(tables[ta],met,idx)+tableCost(tables[tb],met,idx);
+        var A=tables[ta][xi], B=tables[tb][yi];
+        tables[ta][xi]=B; tables[tb][yi]=A;
+        if(tableCost(tables[ta],met,idx)+tableCost(tables[tb],met,idx)<before-1e-9) improved=true;
+        else { tables[ta][xi]=A; tables[tb][yi]=B; }
       }
     if(!improved)break;
   }
-  seatingCache[key]=tables;
+  for(var r=0;r<tables.length&&repairBlocked(tables);r++){}   // blocking is a hard rule
   return tables;
+}
+function buildSeatBook(){
+  var book={tables:{},met:{},order:{}};
+  var acts=state.activities.slice().sort(function(a,b){return ts(a)-ts(b);});
+  acts.forEach(function(a,idx){
+    book.order[a.id]=idx;
+    var tables=computeSeating(a.id,book.met,idx);
+    book.tables[a.id]=tables;
+    tables.forEach(function(t){
+      for(var i=0;i<t.length;i++)for(var j=i+1;j<t.length;j++){
+        var key=pairKey(t[i].studentId,t[j].studentId);
+        if(book.met[key]==null) book.met[key]=idx;    // first time they shared a table
+      }
+    });
+  });
+  seatBook=book;
+}
+function seatingFor(actId){
+  if(!seatBook)buildSeatBook();
+  return seatBook.tables[actId]||[];
+}
+/* did x and y share a table at something EARLIER than this activity? */
+function metBefore(actId,x,y){
+  if(!seatBook)buildSeatBook();
+  var seen=seatBook.met[pairKey(x,y)], idx=seatBook.order[actId];
+  return seen!=null && idx!=null && seen<idx;
 }
 function myTableIndex(actId){
   if(!state.me)return -1;
@@ -603,13 +659,14 @@ function myTable(actId){
 }
 /* the honest answer to "why am I sat with these people" */
 function whyThisTable(a){
-  var mine=myTable(a.id); if(mine.length<2)return null;
+  var mine=myTable(a.id); if(mine.length<2||!state.me)return null;
   var tb=seatingFor(a.id);
   var others=mine.filter(function(m){return m.studentId!==state.me.id;});
   var fresh=others.filter(function(m){return !metBefore(a.id,state.me.id,m.studentId);}).length;
   var bits=["You all chose "+a.title+" — that's the whole match"];
-  if(tb.length>1) bits.push(others.length+1+" of the "+confirmedSeats(a.id).length+" going are at your table, split so nobody is in a group of two");
-  if(fresh===others.length && others.length) bits.push("none of you have sat together before");
+  if(tb.length>1) bits.push(mine.length+" of the "+confirmedSeats(a.id).length+
+    " going are at your table, split so nobody ends up in a pair");
+  if(others.length && fresh===others.length) bits.push("none of you have sat together before");
   else if(fresh) bits.push(fresh+" of them you haven't met before");
   return bits.join(". ")+".";
 }
@@ -720,7 +777,8 @@ async function confirmSeat(a){
   }catch(e){toast(dbFail(e),true);}
 }
 async function postMessage(actId,msg,tableIdx){
-  var ref=chatDoc(actId,(tableIdx==null?myTableIndex(actId):tableIdx)+1);
+  var ti=(tableIdx==null?myTableIndex(actId):tableIdx);
+  var ref=chatDoc(actId,(ti<0?0:ti)+1);
   for(var i=0;i<4;i++){
     try{
       var lease=await ref.acquire({holder:state.me?state.me.id:"anon",ttlMs:3000});
@@ -736,24 +794,29 @@ async function postMessage(actId,msg,tableIdx){
   toast("The chat was busy — send that again.",true); return false;
 }
 function hash(s){var h=0;for(var i=0;i<s.length;i++){h=((h<<5)-h)+s.charCodeAt(i);h|=0;}return h;}
+var botBusy={};
 async function maybePostBot(a){
-  if(!tableOpen(a))return;
-  var tb=seatingFor(a.id);
-  for(var i=0;i<tb.length;i++){
-    var log=(state.chats[a.id]||{})["t"+(i+1)]||[];
-    var host=hostOf(a.id,i); if(!host)continue;
-    var plan="bot-plan-"+a.id+"-"+i, ice="bot-ice-"+a.id+"-"+i;
-    if(!log.some(function(m){return m.id===plan;})){
-      await postMessage(a.id,{id:plan,kind:"bot",by:"bot",name:"Lobby",
-        text:a.title+", "+fmtWhen(a)+", "+a.venue+
-          (tb.length>1?" — table "+(i+1)+" of "+tb.length:"")+". "+tb[i].length+
-          " of you. "+host.name+" is hosting: they'll post when they arrive and where they're sitting.",
-        at:Date.now()},i);
-    }
-    if(!log.some(function(m){return m.id===ice;})){
-      await postMessage(a.id,{id:ice,kind:"bot",by:"bot",name:"Lobby",
-        text:ICEBREAKERS[Math.abs(hash(a.id+i))%ICEBREAKERS.length],at:Date.now()+1},i);
-    }
+  if(!tableOpen(a)||botBusy[a.id])return;
+  botBusy[a.id]=true;
+  try{ await postBotFor(a); } finally{ botBusy[a.id]=false; }
+}
+async function postBotFor(a){
+  var seat=mySeat(a.id);
+  if(!seat||!seat.confirmed)return;          // only ever opens your own table's chat
+  var i=myTableIndex(a.id); if(i<0)return;
+  var tb=seatingFor(a.id), host=hostOf(a.id,i); if(!host)return;
+  var log=(state.chats[a.id]||{})["t"+(i+1)]||[];
+  var plan="bot-plan-"+a.id+"-"+i, ice="bot-ice-"+a.id+"-"+i;
+  if(!log.some(function(m){return m.id===plan;})){
+    await postMessage(a.id,{id:plan,kind:"bot",by:"bot",name:"Lobby",
+      text:a.title+", "+fmtWhen(a)+", "+a.venue+
+        (tb.length>1?" — table "+(i+1)+" of "+tb.length:"")+". "+tb[i].length+
+        " of you. "+host.name+" is hosting: they'll post when they arrive and where they're sitting.",
+      at:Date.now()},i);
+  }
+  if(!log.some(function(m){return m.id===ice;})){
+    await postMessage(a.id,{id:ice,kind:"bot",by:"bot",name:"Lobby",
+      text:ICEBREAKERS[Math.abs(hash(a.id+i))%ICEBREAKERS.length],at:Date.now()+1},i);
   }
 }
 async function saveCheckin(a,madeIt,note){
@@ -773,12 +836,17 @@ async function saveSignal(a,friends,romantic){
   }catch(e){toast(dbFail(e),true);}
 }
 async function blockPerson(a,seat){
-  if(!confirm("Block "+seat.name+"?\n\nThey lose their seat at this event immediately — not next week's — and are frozen out of everything upcoming. They're never told who did it."))return;
+  var multi=tableCount(confirmedSeats(a.id).length)>1;
+  var msg=multi
+    ? "Block "+seat.name+"?\n\nYou will never be seated together again, here or at anything else. They move to another table at this event rather than losing it, and they are never told who did this."
+    : "Block "+seat.name+"?\n\nThere is only one table here, so they lose this seat immediately — not next week's — and are refunded. They are frozen out of everything upcoming and never told who did this.";
+  if(!confirm(msg))return;
   try{
-    await seatDoc(a.id,seat.seatNo)["delete"]();
     await store.doc("blocks/"+state.me.id+"__"+seat.studentId)
       .set({by:state.me.id,target:seat.studentId,actId:a.id,at:Date.now()});
-    toast("Done, and it took effect on this event.");
+    if(!multi) await seatDoc(a.id,seat.seatNo)["delete"]();
+    markSeatingDirty();
+    toast(multi?"Done. You are on different tables now.":"Done, and it took effect on this event.");
     closeSheet(); render();
   }catch(e){toast(dbFail(e),true);}
 }
@@ -874,7 +942,13 @@ function celebrateSignal(a){
 }
 
 /* ============================================================ render */
+var renderQueued=false;
 function render(){
+  if(renderQueued)return;
+  renderQueued=true;
+  setTimeout(function(){ renderQueued=false; renderNow(); },0);
+}
+function renderNow(){
   renderStreak(); renderTabs();
   if(state.tab==="slate")renderSlate();
   if(state.tab==="week")renderWeek();
@@ -1147,6 +1221,9 @@ function weekCard(a){
 function resultPanel(a){
   var box=el("div","stackv");
   var sigs=state.signals[a.id]||{}, mine=sigs[state.me.id];
+  var ci=myCheckin(a);
+  if(ci&&!ci.madeIt){ box.appendChild(makeEmpty("You didn't make it to this one",
+    "Nothing to answer, then. The $5 stays gone — that is what makes the confirm mean anything.")); return box; }
   if(!mine){ box.appendChild(makeEmpty("Nothing recorded","You skipped the signal for this one.")); return box; }
   var fm=[],rm=[];
   myTable(a.id).forEach(function(s){
@@ -1207,7 +1284,7 @@ function renderYou(){
       var gb=el("button","pickbtn",o[1]); gb.type="button";
       gb.setAttribute("aria-pressed",String(cur===o[0]));
       gb.addEventListener("click",async function(){
-        try{ await studentDoc(state.me.id).update({group:o[0]}); seatingCache={}; toast("Saved. Nobody sees this."); }
+        try{ await studentDoc(state.me.id).update({group:o[0]}); markSeatingDirty(); toast("Saved. Nobody sees this."); }
         catch(e){ toast(dbFail(e),true); }
         renderYou();
       });
@@ -1280,8 +1357,10 @@ function demoPanel(){
   return d;
 }
 function nextActivity(){
-  var m=myActivities(); if(m.length)return m[0];
-  return state.activities.slice().sort(function(x,y){return ts(x)-ts(y);})[0];
+  var live=function(a){return phaseOf(a)!=="done"&&!isCancelled(a);};
+  var m=myActivities().filter(live); if(m.length)return m[0];
+  var all=state.activities.slice().sort(function(x,y){return ts(x)-ts(y);});
+  return all.filter(live)[0]||all[0];
 }
 async function fillTable(){
   var a=nextActivity(); if(!a){toast("No activities to fill.",true);return;}
@@ -1298,7 +1377,8 @@ async function fillTable(){
         var sn=await ref.get();
         if(sn.exists&&sn.data().studentId)continue;
         await ref.set({seatNo:n,studentId:sid,name:nm,claimedAt:Date.now(),confirmed:false,paid:PRICE,demo:true});
-        await studentDoc(sid).set({id:sid,name:nm,intent:Math.random()<0.5?"open":"friends",adult:true,demo:true,joinedAt:Date.now()});
+        await studentDoc(sid).set({id:sid,name:nm,intent:Math.random()<0.5?"open":"friends",
+          group:["w","m","n"][Math.floor(Math.random()*3)],adult:true,demo:true,joinedAt:Date.now()});
         break;
       }catch(e){toast(dbFail(e),true);return;}
     }
@@ -1394,7 +1474,7 @@ function openActivitySheet(a){
       var g=el("button","btn ghost","See it in Your week"); g.type="button";
       g.addEventListener("click",function(){closeSheet();switchTab("week");}); s.appendChild(g);
     } else if(full){
-      s.appendChild(makeEmpty("Full","Six is the table. Waitlists are the next thing to build."));
+      s.appendChild(makeEmpty("Full",capOf(a)+" seats and every one of them is taken. Waitlists are the next thing to build."));
     } else if(ph!=="open"&&ph!=="confirming"){
       s.appendChild(makeEmpty("Too late for this one","Seats close when the confirm window does."));
     } else {
@@ -1661,12 +1741,14 @@ function subscribeAll(){
   actColl().onSnapshot(function(snap){
     state.activities=snap.docs.map(function(d){var b=d.data()||{};b.id=d.id;return b;})
       .filter(function(a){return a.startsAt&&a.title;});
+    markSeatingDirty();
     state.mode=isLocalStore?"local":"live";
     state.activities.forEach(function(a){
       if(subscribed[a.id])return;
       subscribed[a.id]=true;
       seatColl(a.id).onSnapshot(function(s){
         state.seats[a.id]=s.docs.map(function(d){return d.data();}).filter(function(x){return x&&x.seatNo;});
+        markSeatingDirty();
         render(); maybePostBot(a);
       },function(e){toast(dbFail(e),true);});
       chatColl(a.id).onSnapshot(function(cs){
@@ -1683,11 +1765,11 @@ function subscribeAll(){
 
   store.collection("blocks").onSnapshot(function(bs){
     var m={}; bs.docs.forEach(function(d){ m[d.id]=d.data(); });
-    state.blocks=m; seatingCache={}; render();
+    state.blocks=m; markSeatingDirty(); render();
   });
   store.collection("students").onSnapshot(function(ss){
     var m={}; ss.docs.forEach(function(d){ m[d.id]=d.data(); });
-    state.students=m; seatingCache={}; render();
+    state.students=m; markSeatingDirty(); render();
   });
   clockDoc().onSnapshot(function(d){
     state.clockOffset=d.exists&&typeof d.data().offsetMs==="number"?d.data().offsetMs:0;
