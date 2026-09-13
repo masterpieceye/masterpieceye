@@ -99,6 +99,26 @@ with, and each row reopens the table chat where you met, because §07 says that 
 never closes. This is the retention loop made visible: the stats tiles say *three
 people*, this says *which three*.
 
+## Arriving
+
+The app used to schedule the meeting and then abandon you at the door: five first
+names, no photo, no table, and eighty other people in the room. The bot even promised
+the host would "post when they arrive", which was a convention with no button behind
+it.
+
+From twenty minutes before the start until the event ends, the table switches to an
+arrival state:
+
+- **An exact spot**, not a venue — `meetAt` on the activity ("back bar, left of the
+  quiz stage").
+- **A table word** — CHESTNUT, LANTERN, OTTER — derived from the activity and table
+  index, so everyone at that table sees the same one and nobody at the other table
+  does. It is what you say at the bar when you cannot see anyone, and it is how two
+  tables at the same event stay distinguishable.
+- **"I'm here"**, which marks your seat, posts one line to the table chat, and shows
+  the rest of the table a green dot next to your name. First to arrive gets told to
+  grab a table; everyone after sees who is already there.
+
 ## Not built yet
 
 Host briefing flow, a moderator's view of the report queue, and real `.edu`

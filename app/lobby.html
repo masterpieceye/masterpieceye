@@ -276,6 +276,19 @@ svg{display:block}
   border:1.5px solid var(--clay);color:var(--clay);background:transparent}
 .demo button:active{background:var(--card)}
 
+.arrive{background:var(--green-bg);border:1px solid transparent;border-radius:14px;
+  padding:16px;display:flex;flex-direction:column;gap:10px}
+.arrive .k{font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--green)}
+.arrive .spot{font-family:'Fraunces',serif;font-size:21px;font-weight:600;color:var(--green-ink);line-height:1.2}
+.arrive .word{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap}
+.arrive .wl{font-size:13px;color:var(--green-ink);opacity:.75}
+.arrive .wv{font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:600;letter-spacing:.08em;
+  color:var(--green-ink);background:var(--card);padding:5px 12px;border-radius:9px}
+.arrive .hint{font-size:13px;color:var(--green-ink);opacity:.8;line-height:1.45}
+.arrive .note{background:var(--card);border-left-color:var(--green)}
+.person.ishere .nm::after{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;
+  background:var(--green);margin-left:7px;vertical-align:middle}
+.person.ishere .rl{color:var(--green)}
 .why{background:var(--card-2);border:1px solid var(--line-2);border-radius:12px;padding:13px 15px}
 .why .k{font-size:11px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-3);margin-bottom:5px}
 .why p{font-size:14px;color:var(--ink-2);line-height:1.5}
@@ -364,7 +377,7 @@ body.presenting .screens{padding-bottom:150px}
 "use strict";
 
 var CAP=6, FLOOR=4, PRICE=5;
-var BUILD="Build 9 · 13 Sep 2026";
+var BUILD="Build 10 · 13 Sep 2026";
 var CONFIRM_OPEN_H=36, CONFIRM_CLOSE_H=24, EVENT_LEN_H=3;
 var LS_ME="lobby.me.v1", LS_FILTERS="lobby.filters.v1", LS_LOCAL="lobby.localdb.v1",
     LS_ONB="lobby.onb.v1", LS_SOUND="lobby.sound.v1";
@@ -789,6 +802,94 @@ function stats(){
   return {tables:attended.length, people:Object.keys(met).length, streak:Object.keys(weeks).length};
 }
 
+/* ---------- arriving somewhere full of strangers ----------
+   The app schedules the meeting and then abandons you at the door. A table
+   needs three things on the night: an exact spot, something to recognise each
+   other by, and a way to say "I'm here" without messaging six strangers. */
+var TABLE_WORDS=["CHESTNUT","LANTERN","OTTER","MARMALADE","COMPASS","THISTLE",
+  "PELICAN","DOMINO","JUNIPER","HARBOUR","MAGPIE","SATSUMA","BRACKEN","KESTREL"];
+function tableWord(actId,ti){
+  return TABLE_WORDS[Math.abs(hash(actId+"|"+ti))%TABLE_WORDS.length];
+}
+function meetAt(a){ return a.meetAt||a.venue; }
+var ARRIVE_EARLY_MIN=20;
+function isArrivalTime(a){
+  var t=now();
+  return t>=ts(a)-ARRIVE_EARLY_MIN*60e3 && t<endsAt(a) && !isCancelled(a);
+}
+function arrivedAt(actId){
+  return myTable(actId).filter(function(p){return p.arrived;});
+}
+function iAmHere(actId){
+  var s=mySeat(actId); return !!(s&&s.arrived);
+}
+async function markArrived(a){
+  var s=mySeat(a.id); if(!s)return;
+  try{
+    await seatDoc(a.id,s.seatNo).update({arrived:true,arrivedAt:Date.now()});
+    var ti=myTableIndex(a.id);
+    await postMessage(a.id,{id:"here-"+state.me.id+"-"+a.id,kind:"bot",by:"bot",name:"Lobby",
+      text:state.me.name+" is here.",at:Date.now()},ti<0?0:ti);
+    ding();
+    render();
+  }catch(e){toast(dbFail(e),true);}
+}
+/* the block that answers "I am outside, now what" */
+function arrivalBlock(a){
+  var ti=myTableIndex(a.id); if(ti<0)return null;
+  var mine=myTable(a.id), host=hostOf(a.id,ti);
+  var here=arrivedAt(a.id), amHost=host&&state.me&&host.studentId===state.me.id;
+  var box=el("div","arrive");
+  box.appendChild(el("div","k","Tonight"));
+  box.appendChild(el("div","spot",meetAt(a)));
+  var word=el("div","word");
+  word.appendChild(el("span","wl","Ask for"));
+  word.appendChild(el("span","wv",tableWord(a.id,ti)));
+  box.appendChild(word);
+  box.appendChild(el("p","hint", seatingFor(a.id).length>1
+    ? "Two tables are running tonight, so the word is how you find the right one."
+    : "It's on the booking, and it's what to say if you can't see anyone."));
+
+  if(!iAmHere(a.id)){
+    var b=el("button","btn","I'm here"); b.type="button";
+    b.addEventListener("click",function(){markArrived(a);});
+    box.appendChild(b);
+    var others=here.filter(function(x){return !state.me||x.studentId!==state.me.id;});
+    box.appendChild(el("p","hint", others.length
+      ? others.map(function(x){return x.name;}).join(", ")+(others.length===1?" is":" are")+" already there."
+      : (amHost ? "Nobody has tapped it yet. You're hosting — grab a table and tap this, and everyone else will come to you."
+                : "Nobody has tapped it yet. If you're first, grab a table and tap it — the others will find you.")));
+  } else {
+    var ok=el("div","note");
+    ok.innerHTML = here.length>=mine.length
+      ? "<b>Everyone's here.</b> That's the whole table."
+      : "<b>You're checked in.</b> "+here.length+" of "+mine.length+" here so far — the rest can see where you are.";
+    box.appendChild(ok);
+    if(here.length<mine.length){
+      var n=el("button","btn ghost","Say where you're sitting"); n.type="button";
+      n.addEventListener("click",function(){ closeSheet(); openWhereSheet(a); });
+      box.appendChild(n);
+    }
+  }
+  return box;
+}
+function openWhereSheet(a){
+  openSheet(function(sh){
+    sheetHead(sh,"Where are you sitting?","Goes straight to the table chat. Short is fine — \"big table by the window\".");
+    var f=el("div","field");
+    var i=el("input"); i.type="text"; i.placeholder="Big table under the TV";
+    f.appendChild(i); sh.appendChild(f);
+    var go=el("button","btn","Send it"); go.type="button";
+    go.addEventListener("click",async function(){
+      var t=i.value.trim(); if(!t){toast("Write something first.",true);return;}
+      closeSheet();
+      await postMessage(a.id,{id:uid("m"),kind:"human",by:state.me.id,name:state.me.name,
+        text:t.slice(0,200),at:Date.now()});
+    });
+    sh.appendChild(go);
+  });
+}
+
 /* ---------- table figure ---------- */
 function tableFigure(slots,size,animate,key){
   var ns="http://www.w3.org/2000/svg", w=size||110;
@@ -962,7 +1063,8 @@ async function postBotFor(a){
     await postMessage(a.id,{id:plan,kind:"bot",by:"bot",name:"Lobby",
       text:a.title+", "+fmtWhen(a)+", "+a.venue+
         (tb.length>1?" — table "+(i+1)+" of "+tb.length:"")+". "+tb[i].length+
-        " of you. "+host.name+" is hosting: they'll post when they arrive and where they're sitting.",
+        " of you. Ask for "+tableWord(a.id,i)+" when you get there. "+host.name+
+        " is hosting, so they'll tap in first and say where they're sitting.",
       at:Date.now()},i);
   }
   if(!log.some(function(m){return m.id===ice;})){
@@ -1151,8 +1253,12 @@ function urgentItem(){
     if(ph==="confirming"&&s&&!s.confirmed)
       best=best||{a:a,kind:"confirm",k:"Needs you now",t:"Confirm your seat — "+a.title,
         d:"Window closes in "+fmtLeft(confirmClosesAt(a)-now())+". Miss it and the seat goes back.",urgent:true};
-    else if(ph==="running"&&s&&s.confirmed)
-      best=best||{a:a,kind:"table",k:"Happening now",t:a.title,d:a.venue+" — open the table",urgent:false};
+    else if(isArrivalTime(a)&&s&&s.confirmed)
+      best=best||{a:a,kind:"table",k:iAmHere(a.id)?"You're there":"Starting now",
+        t:iAmHere(a.id)?a.title:"Tap when you get there",
+        d:iAmHere(a.id)?(arrivedAt(a.id).length+" of "+myTable(a.id).length+" at the table")
+                       :meetAt(a)+" — ask for "+tableWord(a.id,Math.max(0,myTableIndex(a.id))),
+        urgent:!iAmHere(a.id)};
     else if(ph==="done"&&s&&s.confirmed&&!myCheckin(a))
       best=best||{a:a,kind:"checkin",k:"One question",t:"Did you make it to "+a.title+"?",
         d:"Takes a second, and anything you flag reaches a moderator tonight.",urgent:false};
@@ -1476,8 +1582,19 @@ function weekCard(a){
       hn.innerHTML="<b>You're hosting.</b> Post when you arrive and where you're sitting. Your seat was free.";
       card.appendChild(hn);
     }
-    var ob=el("button","btn",ph==="running"?"Open the table — on now":"Open the table"); ob.type="button";
-    ob.addEventListener("click",function(){openTableSheet(a);}); card.appendChild(ob);
+    if(isArrivalTime(a)){
+      var an=el("div","note"+(iAmHere(a.id)?"":" warn"));
+      an.innerHTML=iAmHere(a.id)
+        ? "<b>You're checked in.</b> "+arrivedAt(a.id).length+" of "+myTable(a.id).length+" at the table."
+        : "<b>"+meetAt(a)+".</b> Ask for <b>"+tableWord(a.id,Math.max(0,myTableIndex(a.id)))+"</b>.";
+      card.appendChild(an);
+    }
+    var ob=el("button","btn",isArrivalTime(a)?(iAmHere(a.id)?"Open the table":"I'm here"):"Open the table");
+    ob.type="button";
+    ob.addEventListener("click",function(){
+      if(isArrivalTime(a)&&!iAmHere(a.id)) markArrived(a); else openTableSheet(a);
+    });
+    card.appendChild(ob);
   } else if(ph==="done"){
     if(s&&!s.confirmed){ card.appendChild(makeEmpty("You didn't confirm this one","No signal to give — you weren't at the table.")); return card; }
     var ci=myCheckin(a);
@@ -1894,8 +2011,9 @@ function openTableSheet(a){
     var mine=ti<0?(tb[0]||[]):tb[ti];
     sheetHead(s,tb.length>1?"Table "+(ti+1)+" of "+tb.length:"Your table",
       a.title+" · "+fmtWhen(a)+" · "+a.venue);
+    if(isArrivalTime(a)){ var ab=arrivalBlock(a); if(ab) s.appendChild(ab); }
     var why=whyThisTable(a);
-    if(why){ var wn=el("div","why"); wn.appendChild(el("div","k","Why these people"));
+    if(why&&!isArrivalTime(a)){ var wn=el("div","why"); wn.appendChild(el("div","k","Why these people"));
       wn.appendChild(el("p",null,why)); s.appendChild(wn); }
     var roster=el("div","roster");
     mine.slice().sort(function(x,y){return (x.claimedAt||0)-(y.claimedAt||0);}).forEach(function(p){
@@ -1904,7 +2022,10 @@ function openTableSheet(a){
       row.appendChild(el("div","avatar"+(isMe?" me":""),initials(p.name)));
       var box=el("div");
       box.appendChild(el("div","nm",p.name+(isMe&&p.name!=="You"?" (you)":"")));
-      box.appendChild(el("div","rl",host&&host.studentId===p.studentId?"host · seat free":"also here"));
+      box.appendChild(el("div","rl",
+        p.arrived ? "here now"
+        : (host&&host.studentId===p.studentId?"host · seat free":"also here")));
+      if(p.arrived) row.classList.add("ishere");
       row.appendChild(box);
       if(!isMe&&state.me){
         var m=el("button","dots end","⋯"); m.type="button";
