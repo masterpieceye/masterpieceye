@@ -281,6 +281,25 @@ svg{display:block}
 .why p{font-size:14px;color:var(--ink-2);line-height:1.5}
 .fence{border:1.5px solid var(--line);border-left:4px solid var(--clay);border-radius:12px;
   padding:15px;display:flex;flex-direction:column;gap:9px;background:var(--card-2);margin-top:6px}
+.showbar{position:fixed;left:0;right:0;bottom:0;z-index:60;max-width:468px;margin:0 auto;
+  background:var(--ink);color:var(--ground);display:grid;
+  grid-template-columns:auto 1fr auto;grid-template-areas:"n say say" "n nav x";
+  gap:4px 12px;align-items:center;
+  padding:13px 16px calc(13px + env(safe-area-inset-bottom,0px));
+  box-shadow:0 -10px 30px -20px rgba(0,0,0,.8)}
+.showbar .n{grid-area:n;font-family:'IBM Plex Mono',monospace;font-size:12px;opacity:.55;
+  font-variant-numeric:tabular-nums}
+.showbar .say{grid-area:say;font-size:14.5px;line-height:1.4;max-width:none}
+.showbar .nav{grid-area:nav;display:flex;gap:7px;margin-top:4px}
+.showbar .sb{border:1px solid rgba(255,255,255,.28);color:inherit;border-radius:9px;
+  padding:7px 13px;font-size:13.5px;font-weight:700}
+.showbar .sb.primary{background:var(--green);border-color:var(--green)}
+.showbar .sb[disabled]{opacity:.35}
+.showbar .sx{grid-area:x;font-size:12.5px;opacity:.6;text-decoration:underline;
+  text-underline-offset:3px;align-self:end;padding-bottom:7px}
+body.presenting .tabbar{display:none}
+body.presenting .sheet{max-height:calc(92svh - 128px);margin-bottom:128px}
+body.presenting .screens{padding-bottom:150px}
 .foot{font-size:12.5px;color:var(--ink-3);line-height:1.5}
 .switchrow{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line-2)}
 .switchrow:last-child{border-bottom:none}
@@ -345,7 +364,7 @@ svg{display:block}
 "use strict";
 
 var CAP=6, FLOOR=4, PRICE=5;
-var BUILD="Build 8 · 13 Sep 2026";
+var BUILD="Build 9 · 13 Sep 2026";
 var CONFIRM_OPEN_H=36, CONFIRM_CLOSE_H=24, EVENT_LEN_H=3;
 var LS_ME="lobby.me.v1", LS_FILTERS="lobby.filters.v1", LS_LOCAL="lobby.localdb.v1",
     LS_ONB="lobby.onb.v1", LS_SOUND="lobby.sound.v1";
@@ -357,7 +376,7 @@ var ICEBREAKERS=[
   "Two truths and a module you regret. Go."
 ];
 
-var state={ready:false,mode:"connecting",blocks:{},me:null,activities:[],seats:{},chats:{},signals:{},
+var state={ready:false,mode:"connecting",blocks:{},me:null,show:{on:false,i:0,busy:false},activities:[],seats:{},chats:{},signals:{},
   students:{},waits:{},clockOffset:0,filters:{},tab:"slate",sound:true,seenSeats:{}};
 function capOf(a){ return (a&&a.capacity)||CAP; }
 
@@ -377,6 +396,7 @@ function reduced(){try{return window.matchMedia("(prefers-reduced-motion: reduce
 
 var toastTimer=null;
 function toast(msg,bad){
+  if(state.show.on&&!bad)return;          // no chatter over the presenter caption
   var o=document.querySelector(".toast"); if(o)o.remove();
   var t=el("div","toast"+(bad?" bad":""),msg); document.body.appendChild(t);
   clearTimeout(toastTimer); toastTimer=setTimeout(function(){if(t.parentNode)t.remove();},4000);
@@ -1597,6 +1617,12 @@ function demoPanel(){
   d.appendChild(el("h4",null,"Demo controls — not part of the product"));
   d.appendChild(el("p",null,"A real week takes a week. These move the shared clock and fill seats so you can walk the whole loop in a minute. Everything they touch is real state — anyone else on this link sees it too."));
   var mk=function(l,f){var b=el("button",null,l);b.type="button";b.addEventListener("click",f);return b;};
+  var pres=mk("▶  Presenter mode — walk the whole thing with a script",startShow);
+  pres.style.cssText="width:100%;padding:13px;font-size:14px;font-weight:800;background:var(--ink);color:var(--ground);border-color:var(--ink)";
+  d.appendChild(pres);
+  var rs=mk("Reset so you can run it again",resetShow);
+  rs.style.cssText="width:100%;padding:10px;font-size:12.5px";
+  d.appendChild(rs);
   var big=mk("▸  Run the whole week (about a minute)",runTour);
   big.style.cssText="width:100%;padding:12px;font-size:13.5px;background:var(--clay);color:var(--ground);border-color:var(--clay)";
   d.appendChild(big);
@@ -1877,7 +1903,7 @@ function openTableSheet(a){
       var isMe=state.me&&p.studentId===state.me.id;
       row.appendChild(el("div","avatar"+(isMe?" me":""),initials(p.name)));
       var box=el("div");
-      box.appendChild(el("div","nm",p.name+(isMe?" (you)":"")));
+      box.appendChild(el("div","nm",p.name+(isMe&&p.name!=="You"?" (you)":"")));
       box.appendChild(el("div","rl",host&&host.studentId===p.studentId?"host · seat free":"also here"));
       row.appendChild(box);
       if(!isMe&&state.me){
@@ -2022,6 +2048,116 @@ function showOnboarding(){
     o.focus();
   }
   o.hidden=false; draw();
+}
+
+/* ============================================================ presenting
+   A social app demoed by one person on one screen looks like an empty room.
+   This drives the app through the whole loop with a line to say at each step,
+   so a single presenter can show what six people would normally show. */
+function showAct(){
+  var big=state.activities.filter(function(a){return capOf(a)>6&&phaseOf(a)!=="done";});
+  if(big.length)return big.sort(function(x,y){return ts(x)-ts(y);})[0];
+  return nextActivity();
+}
+async function ensureShowMe(){
+  if(state.me)return;
+  await createMe("You","2005-01-01","open");
+}
+async function showClaim(a){
+  if(mySeat(a.id))return;
+  await ensureShowMe();
+  await takeSeat(a);
+}
+async function showJump(a,fn){ await setClock(fn(a)-Date.now()); }
+
+var SHOW=[
+ {say:"This is the week. Four real things, real places, real times — you don't browse people, you pick something to do.",
+  run:async function(){ closeSheet(); await setClock(0); switchTab("slate"); }},
+ {say:"Six seats each. Nobody here knows each other yet, and that's the point — the activity carries the conversation.",
+  run:async function(){ switchTab("slate"); openActivitySheet(showAct()); }},
+ {say:"Five dollars. Not a subscription — it covers the activity, and it's the reason people actually turn up.",
+  run:async function(){ closeSheet(); await showClaim(showAct()); switchTab("week"); }},
+ {say:"A day before, one tap to confirm. Miss the window and the seat goes back to the waitlist, and the five dollars doesn't.",
+  run:async function(){ var a=showAct(); await showJump(a,function(x){return confirmOpensAt(x)+30*60e3;});
+    switchTab("week"); }},
+ {say:"That's it confirmed. Now fill the rest of the room — on a real campus these are other students claiming seats all week.",
+  run:async function(){ var a=showAct(); var s=mySeat(a.id);
+    if(s&&!s.confirmed){ try{ await seatDoc(a.id,s.seatNo).update({confirmed:true,confirmedAt:Date.now()}); }catch(e){} }
+    await fillTable(); await confirmOthers(); switchTab("slate"); }},
+ {say:function(){ var a=showAct(), n=confirmedSeats(a.id).length, t=seatingFor(a.id);
+    return n+" people chose "+a.title.toLowerCase()+", so it becomes "+
+      (t.length>1?t.length+" tables of about "+Math.round(n/t.length):"one table")+
+      ". This is the only matching in the product — and it happens after everyone already agreed on the activity."; },
+  run:async function(){ var a=showAct(); await showJump(a,function(x){return confirmClosesAt(x)+5*60e3;});
+    switchTab("week"); await sleep(500); openTableSheet(a); await sleep(900); refreshChatLog(a.id); }},
+ {say:"The bot posts first with the plan and a named host, so nobody has to be the one who speaks first. That's the single biggest reason group chats die.",
+  run:async function(){ var a=showAct(); await maybePostBot(a); await sleep(500); refreshChatLog(a.id); }},
+ {say:"Afterwards, two questions — and only one of them is about dating, only for people who said at signup that they wanted it.",
+  run:async function(){ var a=showAct(); closeSheet();
+    await showJump(a,function(x){return endsAt(x)+30*60e3;});
+    await signalOthers(a); switchTab("week"); await sleep(300);
+    await saveCheckin(a,true,""); await sleep(300); openSignalSheet(a); }},
+ {say:"Silent unless it's mutual. Nobody is ever told they weren't picked — including you, just now.",
+  run:async function(){ }},
+ {say:"And week two has a reason to exist: the people you actually met, and the table chat that never closed.",
+  run:async function(){ closeSheet(); switchTab("week"); }}
+];
+
+function renderShowBar(){
+  var old=$("showbar"); if(old)old.remove();
+  if(!state.show.on)return;
+  var bar=el("div","showbar"); bar.id="showbar";
+  var n=el("div","n",(state.show.i+1)+"/"+SHOW.length);
+  bar.appendChild(n);
+  var line=SHOW[state.show.i].say;
+  bar.appendChild(el("p","say",typeof line==="function"?line():line));
+  var nav=el("div","nav");
+  var back=el("button","sb","‹"); back.type="button"; back.setAttribute("aria-label","Previous step");
+  back.disabled=state.show.i===0||state.show.busy;
+  back.addEventListener("click",function(){ gotoStep(state.show.i-1); });
+  var next=el("button","sb primary",state.show.i===SHOW.length-1?"Done":"Next ›"); next.type="button";
+  next.disabled=state.show.busy;
+  next.addEventListener("click",function(){
+    if(state.show.i===SHOW.length-1) stopShow(); else gotoStep(state.show.i+1);
+  });
+  nav.appendChild(back); nav.appendChild(next); bar.appendChild(nav);
+  var x=el("button","sx","Exit"); x.type="button";
+  x.addEventListener("click",stopShow); bar.appendChild(x);
+  document.body.appendChild(bar);
+}
+async function gotoStep(i){
+  if(state.show.busy)return;
+  state.show.i=Math.max(0,Math.min(SHOW.length-1,i));
+  state.show.busy=true; renderShowBar();
+  try{ await SHOW[state.show.i].run(); }catch(e){ toast("That step didn't run cleanly — carry on.",true); }
+  state.show.busy=false; renderShowBar(); render();
+}
+async function startShow(){
+  state.show.on=true; state.show.i=-1;
+  document.body.classList.add("presenting");
+  await gotoStep(0);
+}
+function stopShow(){
+  state.show.on=false;
+  document.body.classList.remove("presenting");
+  renderShowBar(); render();
+}
+/* wipe only what the presenter did, so it can be run again */
+async function resetShow(){
+  if(!state.me){toast("Nothing to reset.");return;}
+  var mine=state.me.id;
+  for(var i=0;i<state.activities.length;i++){
+    var a=state.activities[i];
+    var s=seatsOf(a.id).filter(function(x){return x.studentId===mine;});
+    for(var j=0;j<s.length;j++){ try{ await seatDoc(a.id,s[j].seatNo)["delete"](); }catch(e){} }
+    try{ await signalDoc(a.id,mine)["delete"](); }catch(e){}
+    try{ await signalDoc(a.id,mine+"__checkin")["delete"](); }catch(e){}
+    try{ await waitDoc(a.id,mine)["delete"](); }catch(e){}
+  }
+  await setClock(0);
+  markSeatingDirty();
+  toast("Reset. Ready to run it again.");
+  switchTab("slate");
 }
 
 /* ============================================================ tabs */

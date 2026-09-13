@@ -104,3 +104,18 @@ people*, this says *which three*.
 Host briefing flow, a moderator's view of the report queue, and real `.edu`
 verification. Push notifications are the spec's entire retention loop and cannot exist
 in a page like this.
+
+## Presenting it
+
+A social app demoed by one person on one screen looks like an empty room. **You →
+Presenter mode** drives the app through the whole loop and shows a line to say at each
+of ten steps, so a single presenter shows what six people would normally show. It uses
+real state, so what the audience sees is the product working, not a slideshow.
+
+**Reset so you can run it again** clears only the presenter's own seats, signals and
+check-ins, and puts the clock back. The seeded students stay, so the slate never looks
+dead. Rehearse as many times as you like.
+
+Two things worth knowing on stage: toasts are suppressed while presenting so nothing
+covers the caption, and step 6's line counts the real roster rather than quoting a
+number that may not match what is on screen.
