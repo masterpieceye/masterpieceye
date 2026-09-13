@@ -905,9 +905,10 @@ function celebrateClaim(a,n){
     var opens=confirmOpensAt(a)-now();
     var next = opens>0 ? "We'll nudge you in "+fmtLeft(opens)+" to confirm. One tap then and you're locked in."
                        : "Confirm it now and you're locked in.";
-    celebrateBase(c,a,"Seat "+n+" is yours",
-      a.title+", "+fmtWhen(a)+". "+next,
-      [{label:"Got it",fn:function(){closeCelebrate();switchTab("week");}}]);
+    var acts=[{label:"Got it",fn:function(){closeCelebrate();switchTab("week");}}];
+    if(opens>0) acts.push({label:"Skip the wait — run the week",cls:"btn ghost",
+      fn:function(){closeCelebrate();switchTab("week");runTour();}});
+    celebrateBase(c,a,"Seat "+n+" is yours", a.title+", "+fmtWhen(a)+". "+next, acts);
   });
 }
 function celebrateConfirm(a){
@@ -1337,6 +1338,9 @@ function demoPanel(){
   d.appendChild(el("h4",null,"Demo controls — not part of the product"));
   d.appendChild(el("p",null,"A real week takes a week. These move the shared clock and fill seats so you can walk the whole loop in a minute. Everything they touch is real state — anyone else on this link sees it too."));
   var mk=function(l,f){var b=el("button",null,l);b.type="button";b.addEventListener("click",f);return b;};
+  var big=mk("▸  Run the whole week (about a minute)",runTour);
+  big.style.cssText="width:100%;padding:12px;font-size:13.5px;background:var(--clay);color:var(--ground);border-color:var(--clay)";
+  d.appendChild(big);
   var r1=el("div","row");
   r1.appendChild(mk("Fill a table",fillTable));
   r1.appendChild(mk("Confirm the others",confirmOthers));
@@ -1348,7 +1352,6 @@ function demoPanel(){
   r2.appendChild(mk("reset clock",function(){setClock(0);toast("Clock back to real time.");}));
   d.appendChild(r2);
   var r3=el("div","row");
-  r3.appendChild(mk("Run the whole loop",runTour));
   r3.appendChild(mk("Become someone else",function(){
     localStorage.removeItem(LS_ME); state.me=null; state.seenSeats={};
     toast("You're a new person now."); switchTab("slate");
