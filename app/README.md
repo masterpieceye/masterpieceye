@@ -74,7 +74,25 @@ Seeding happens outside the page; the page never ships hardcoded rows.
 Declaring `db` makes the artifact organization-internal — it cannot be shared with a
 public link.
 
+## Seats going back, and the waitlist
+
+A seat is only real while it is confirmed. When the confirm window closes, any seat
+nobody answered for is marked `released` and stops counting against capacity - the app
+used to *say* the seat went back while silently holding it forever. Releasing is
+idempotent and any client can do it, so no scheduler is needed.
+
+A full activity offers a waitlist instead of a dead end. The person at the head of the
+queue claims a freed seat themselves, on their own client, the moment one appears -
+which avoids one viewer writing a seat on another's behalf. Seats free up two ways:
+somebody gives one up, or the confirm window closes on somebody who didn't answer.
+
+Reporting is separate from blocking, as §07 requires. Blocking means never seated
+together. Reporting sends it to a moderator *and* withdraws the reported person from
+every upcoming event while it is reviewed - including anything in the next two days,
+which is the window that actually matters.
+
 ## Not built yet
 
-Waitlist and backfill, host briefing flow, moderator queue, multi-table partitioning
-for activities with more than six claims, and real `.edu` verification.
+Host briefing flow, a moderator's view of the report queue, and real `.edu`
+verification. Push notifications are the spec's entire retention loop and cannot exist
+in a page like this.

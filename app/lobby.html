@@ -114,6 +114,9 @@ svg{display:block}
 .act .fig{flex-shrink:0}
 .act .foot{padding:11px 15px 14px;display:flex;flex-direction:column;gap:10px}
 
+.dayhead{font-size:11.5px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;
+  color:var(--ink-3);padding:6px 2px 0;display:flex;align-items:center;gap:10px}
+.dayhead::after{content:"";flex:1;height:1px;background:var(--line)}
 .chips{display:flex;flex-wrap:wrap;gap:5px}
 .chip{font-size:10.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;
   padding:4px 8px;border-radius:6px;background:var(--card-2);color:var(--ink-2);border:1px solid var(--line-2)}
@@ -347,7 +350,7 @@ var ICEBREAKERS=[
 ];
 
 var state={ready:false,mode:"connecting",blocks:{},me:null,activities:[],seats:{},chats:{},signals:{},
-  students:{},clockOffset:0,filters:{},tab:"slate",sound:true,seenSeats:{}};
+  students:{},waits:{},clockOffset:0,filters:{},tab:"slate",sound:true,seenSeats:{}};
 function capOf(a){ return (a&&a.capacity)||CAP; }
 
 /* ---------- utils ---------- */
@@ -357,6 +360,10 @@ function uid(p){return (p||"")+Math.random().toString(36).slice(2,9)+Date.now().
 function lsGet(k,d){try{var v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch(e){return d;}}
 function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
 function sleep(ms){return new Promise(function(r){setTimeout(r,ms);});}
+function ordinal(n){
+  var sfx=["th","st","nd","rd"], v=n%100;
+  return n+(sfx[(v-20)%10]||sfx[v]||sfx[0]);
+}
 function initials(n){n=(n||"?").trim();var p=n.split(/\s+/);return ((p[0]||"?")[0]+(p[1]?p[1][0]:"")).toUpperCase();}
 function reduced(){try{return window.matchMedia("(prefers-reduced-motion: reduce)").matches;}catch(e){return false;}}
 
@@ -510,6 +517,8 @@ function seatColl(id){return store.collection("activities/"+id+"/seats");}
 function seatDoc(id,n){return store.doc("activities/"+id+"/seats/s"+n);}
 function chatColl(id){return store.collection("activities/"+id+"/chat");}
 function chatDoc(id,t){return store.doc("activities/"+id+"/chat/t"+(t||1));}
+function waitColl(id){return store.collection("activities/"+id+"/waitlist");}
+function waitDoc(id,sid){return store.doc("activities/"+id+"/waitlist/"+sid);}
 function signalColl(id){return store.collection("activities/"+id+"/signals");}
 function signalDoc(id,sid){return store.doc("activities/"+id+"/signals/"+sid);}
 function studentDoc(sid){return store.doc("students/"+sid);}
@@ -517,7 +526,18 @@ function clockDoc(){return store.doc("meta/clock");}
 
 /* ---------- derived ---------- */
 function seatsOf(id){return state.seats[id]||[];}
-function takenSeats(id){return seatsOf(id).filter(function(s){return s&&s.studentId;});}
+function takenSeats(id){return seatsOf(id).filter(function(s){return s&&s.studentId&&!s.released;});}
+function mySeatAny(id){if(!state.me)return null;
+  var m=seatsOf(id).filter(function(s){return s&&s.studentId===state.me.id;});return m[0]||null;}
+function myLostSeat(id){var s=mySeatAny(id);return (s&&s.released)?s:null;}
+function waitQueue(id){
+  return (state.waits[id]||[]).slice().sort(function(a,b){return (a.joinedAt||0)-(b.joinedAt||0);});}
+function myWaitPos(id){
+  if(!state.me)return 0;
+  var q=waitQueue(id);
+  for(var i=0;i<q.length;i++) if(q[i].studentId===state.me.id) return i+1;
+  return 0;}
+function seatsFree(a){return capOf(a)-takenSeats(a.id).length;}
 function confirmedSeats(id){return takenSeats(id).filter(function(s){return s.confirmed;});}
 function mySeat(id){if(!state.me)return null;
   var m=takenSeats(id).filter(function(s){return s.studentId===state.me.id;});return m[0]||null;}
@@ -672,7 +692,7 @@ function whyThisTable(a){
 }
 function myActivities(){
   if(!state.me)return [];
-  return state.activities.filter(function(a){return !!mySeat(a.id);})
+  return state.activities.filter(function(a){return !!mySeatAny(a.id)||myWaitPos(a.id)>0;})
     .sort(function(x,y){return ts(x)-ts(y);});}
 function myCheckin(a){return (state.signals[a.id]||{})[(state.me?state.me.id:"")+"__checkin"];}
 function mySignal(a){return (state.signals[a.id]||{})[state.me?state.me.id:""];}
@@ -743,10 +763,7 @@ function figFor(a,size,animate){
 }
 
 /* ============================================================ writes */
-async function claimSeat(a){
-  if(!state.me){openJoinSheet(a);return;}
-  if(mySeat(a.id)){toast("You already have a seat here.");return;}
-  if(takenSeats(a.id).length>=capOf(a)){toast("That filled up while you were looking.",true);return;}
+async function takeSeat(a){
   for(var n=1;n<=capOf(a);n++){
     var ref=seatDoc(a.id,n);
     try{
@@ -754,19 +771,75 @@ async function claimSeat(a){
       if(!lease.acquired)continue;
       var snap=await ref.get();
       var body=snap.exists?snap.data():null;
-      if(body&&body.studentId)continue;
+      if(body&&body.studentId&&!body.released)continue;
       await ref.set({seatNo:n,studentId:state.me.id,name:state.me.name,claimedAt:Date.now(),confirmed:false,paid:PRICE});
-      ding("big");
-      celebrateClaim(a,n);
-      return;
-    }catch(e){toast(dbFail(e),true);return;}
+      return n;
+    }catch(e){toast(dbFail(e),true);return null;}
   }
-  toast("Every seat is taken.",true);
+  return null;
+}
+async function claimSeat(a){
+  if(!state.me){openJoinSheet(a);return;}
+  if(mySeat(a.id)){toast("You already have a seat here.");return;}
+  if(seatsFree(a)<=0){toast("That filled up while you were looking.",true);render();return;}
+  var n=await takeSeat(a);
+  if(n==null){toast("Every seat is taken.",true);render();return;}
+  ding("big"); celebrateClaim(a,n);
+}
+async function joinWaitlist(a){
+  if(!state.me){openJoinSheet(a);return;}
+  try{
+    await waitDoc(a.id,state.me.id).set({studentId:state.me.id,name:state.me.name,joinedAt:Date.now()});
+    toast("On the list. If a seat frees up before the window closes, it's yours automatically.");
+    render();
+  }catch(e){toast(dbFail(e),true);}
+}
+async function leaveWaitlist(a){
+  if(!state.me)return;
+  try{ await waitDoc(a.id,state.me.id)["delete"](); toast("Off the list."); render(); }
+  catch(e){toast(dbFail(e),true);}
+}
+var promoteBusy={};
+async function maybePromote(a){
+  if(!state.me||promoteBusy[a.id])return;
+  var ph=phaseOf(a);
+  if(ph!=="open"&&ph!=="confirming")return;
+  if(mySeat(a.id)||myWaitPos(a.id)!==1)return;     // only the head of the queue claims
+  if(seatsFree(a)<=0)return;
+  promoteBusy[a.id]=true;
+  try{
+    var n=await takeSeat(a);
+    if(n==null)return;
+    await waitDoc(a.id,state.me.id)["delete"]();
+    ding("big");
+    showCelebrate(function(c){
+      celebrateBase(c,a,"A seat opened up",
+        "You were first on the list for "+a.title+", so it's yours — seat "+n+", $5 charged. "+
+        (confirmOpensAt(a)-now()>0 ? "We'll nudge you to confirm nearer the time." : "Confirm it now to keep it."),
+        [{label:"Good",fn:function(){closeCelebrate();switchTab("week");}}]);
+    });
+  }finally{ promoteBusy[a.id]=false; }
+}
+/* an unconfirmed seat genuinely goes back at window close, rather than just being told it did */
+var reapBusy={};
+async function reapUnconfirmed(a){
+  if(reapBusy[a.id])return;
+  var ph=phaseOf(a);
+  if(ph==="open"||ph==="confirming")return;
+  var stale=seatsOf(a.id).filter(function(x){return x.studentId&&!x.released&&!x.confirmed;});
+  if(!stale.length)return;
+  reapBusy[a.id]=true;
+  try{
+    for(var i=0;i<stale.length;i++){
+      try{ await seatDoc(a.id,stale[i].seatNo).update({released:true,releasedAt:Date.now()}); }
+      catch(e){ break; }
+    }
+  }finally{ reapBusy[a.id]=false; }
 }
 async function leaveSeat(a){
   var s=mySeat(a.id); if(!s)return;
-  if(!confirm("Give up your seat at "+a.title+"?\n\nIt goes back to the slate straight away. The $5 only comes back if the whole event cancels."))return;
-  try{ await seatDoc(a.id,s.seatNo)["delete"](); toast("Seat released."); render(); }
+  try{ await seatDoc(a.id,s.seatNo)["delete"]();
+    toast("Seat released — it goes to whoever is first on the waitlist."); render(); }
   catch(e){toast(dbFail(e),true);}
 }
 async function confirmSeat(a){
@@ -835,12 +908,28 @@ async function saveSignal(a,friends,romantic){
     setTimeout(function(){ celebrateSignal(a); },160);
   }catch(e){toast(dbFail(e),true);}
 }
+async function reportPerson(a,seat,note){
+  try{
+    await store.doc("reports/"+state.me.id+"__"+seat.studentId+"__"+a.id)
+      .set({by:state.me.id,target:seat.studentId,actId:a.id,note:note||"",at:Date.now(),status:"open"});
+    var frozen=0;
+    for(var i=0;i<state.activities.length;i++){
+      var act=state.activities[i];
+      if(phaseOf(act)==="done")continue;
+      var theirs=seatsOf(act.id).filter(function(x){return x.studentId===seat.studentId&&!x.released;});
+      for(var j=0;j<theirs.length;j++){
+        try{ await seatDoc(act.id,theirs[j].seatNo).update({released:true,releasedAt:Date.now(),frozen:true}); frozen++; }
+        catch(e){}
+      }
+    }
+    markSeatingDirty();
+    toast("Reported. A moderator sees this tonight, and they're out of "+
+      frozen+" upcoming "+(frozen===1?"event":"events")+" while it's reviewed.");
+    closeSheet(); render();
+  }catch(e){toast(dbFail(e),true);}
+}
 async function blockPerson(a,seat){
   var multi=tableCount(confirmedSeats(a.id).length)>1;
-  var msg=multi
-    ? "Block "+seat.name+"?\n\nYou will never be seated together again, here or at anything else. They move to another table at this event rather than losing it, and they are never told who did this."
-    : "Block "+seat.name+"?\n\nThere is only one table here, so they lose this seat immediately — not next week's — and are refunded. They are frozen out of everything upcoming and never told who did this.";
-  if(!confirm(msg))return;
   try{
     await store.doc("blocks/"+state.me.id+"__"+seat.studentId)
       .set({by:state.me.id,target:seat.studentId,actId:a.id,at:Date.now()});
@@ -1069,7 +1158,16 @@ function renderSlate(){
   }
   $("slate-sub").textContent = vis.length+" "+(vis.length===1?"thing":"things") +
     " on. Six seats each, $5, and it runs whether or not you know anyone.";
-  vis.forEach(function(a){ list.appendChild(activityCard(a)); });
+  var lastDay="";
+  vis.forEach(function(a){
+    var d=new Date(a.startsAt), key=d.toDateString();
+    if(key!==lastDay){
+      lastDay=key;
+      list.appendChild(el("div","dayhead",
+        d.toLocaleDateString(undefined,{weekday:"long",day:"numeric",month:"short"})));
+    }
+    list.appendChild(activityCard(a));
+  });
 }
 function activityCard(a){
   var card=el("div","card act");
@@ -1095,6 +1193,22 @@ function activityCard(a){
     var b1=el("button","btn ghost sm","You're in — see details"); b1.type="button";
     b1.addEventListener("click",function(){openActivitySheet(a);});
     foot.appendChild(b1);
+  } else if(full&&(ph==="open"||ph==="confirming")){
+    var pos=myWaitPos(a.id);
+    if(pos){
+      var w1=el("div","note warn");
+      w1.innerHTML="<b>"+ordinal(pos)+" on the waitlist.</b> If a seat frees up before the window closes it becomes yours automatically.";
+      foot.appendChild(w1);
+      var w2=el("button","linkish","Leave the waitlist"); w2.type="button";
+      w2.addEventListener("click",function(){leaveWaitlist(a);});
+      foot.appendChild(w2);
+    } else {
+      var w3=el("button","btn ghost sm","Full — join the waitlist"); w3.type="button";
+      w3.addEventListener("click",function(){joinWaitlist(a);});
+      foot.appendChild(w3);
+      var q=waitQueue(a.id).length;
+      if(q){ var w4=el("p","foot",q+" already waiting."); foot.appendChild(w4); }
+    }
   } else if(full){
     var b2=el("button","btn ghost sm","Full — see details"); b2.type="button";
     b2.addEventListener("click",function(){openActivitySheet(a);});
@@ -1143,6 +1257,8 @@ function renderWeek(){
 function weekRank(a){
   var ph=phaseOf(a), s=mySeat(a.id);
   if(isCancelled(a))return 6;
+  if(!s&&myLostSeat(a.id))return 6;
+  if(!s&&myWaitPos(a.id))return 4;
   if(ph==="confirming"&&s&&!s.confirmed)return 0;
   if(ph==="done"&&s&&s.confirmed&&!myCheckin(a))return 1;
   if(ph==="done"&&s&&s.confirmed&&myCheckin(a)&&myCheckin(a).madeIt&&!mySignal(a))return 1;
@@ -1163,6 +1279,27 @@ function weekCard(a){
   card.appendChild(row);
 
   var ph=phaseOf(a), s=mySeat(a.id);
+  var wpos=myWaitPos(a.id), lost=myLostSeat(a.id);
+  if(!s&&wpos){
+    var wn=el("div","note warn");
+    wn.innerHTML="<b>"+ordinal(wpos)+" on the waitlist.</b> "+
+      (ph==="open"||ph==="confirming"
+        ? "A seat reaches you the moment somebody gives one up, or when the window closes on anyone who didn't confirm."
+        : "Too late for this one — the window has closed.");
+    card.appendChild(wn);
+    var wl=el("button","linkish","Leave the waitlist"); wl.type="button";
+    wl.addEventListener("click",function(){leaveWaitlist(a);});
+    card.appendChild(wl);
+    return card;
+  }
+  if(!s&&lost){
+    var ln=el("div","note bad");
+    ln.innerHTML=lost.frozen
+      ? "<b>Your seat was withdrawn while a report is reviewed.</b> You'll hear from a moderator."
+      : "<b>You didn't confirm, so the seat went back.</b> It went to the waitlist and the table is running without you. The $5 doesn't come back — that's what makes confirming mean something.";
+    card.appendChild(ln);
+    return card;
+  }
   if(isCancelled(a)){
     var n=el("div","note bad");
     n.innerHTML="<b>Cancelled — refunded.</b> Only "+confirmedSeats(a.id).length+" confirmed and it needed "+FLOOR+
@@ -1176,7 +1313,11 @@ function weekCard(a){
     st.appendChild(el("span","chip gold","Confirm opens in "+fmtLeft(confirmOpensAt(a)-now())));
     card.appendChild(st);
     var lv=el("button","linkish","Give up my seat"); lv.type="button";
-    lv.addEventListener("click",function(){leaveSeat(a);}); card.appendChild(lv);
+    lv.addEventListener("click",function(){
+      askSheet({title:"Give up your seat?",
+        body:"It goes straight back to the slate, and to whoever is first on the waitlist. The $5 only comes back if the whole event cancels.",
+        confirmLabel:"Give it up",danger:true,onConfirm:function(){leaveSeat(a);}});
+    }); card.appendChild(lv);
   } else if(ph==="confirming"){
     if(s&&s.confirmed){
       var ok=el("div","note"); ok.innerHTML="<b>You're confirmed.</b> The chat opens when the window closes.";
@@ -1458,6 +1599,38 @@ function sheetHead(s,title,sub){
   s.appendChild(h);
 }
 
+function askSheet(o){
+  openSheet(function(s){
+    sheetHead(s,o.title,o.body);
+    var go=el("button","btn"+(o.danger?" clay":""),o.confirmLabel); go.type="button";
+    go.addEventListener("click",function(){closeSheet();o.onConfirm();});
+    s.appendChild(go);
+    var no=el("button","linkish","Never mind"); no.type="button";
+    no.addEventListener("click",closeSheet); s.appendChild(no);
+  });
+}
+function openPersonSheet(a,seat){
+  openSheet(function(s){
+    sheetHead(s,seat.name,"Neither of these ever tells them who did it.");
+    var f=el("div","field");
+    f.appendChild(el("label",null,"What happened? (optional)"));
+    var note=el("input"); note.type="text"; note.placeholder="A moderator reads this tonight";
+    f.appendChild(note); s.appendChild(f);
+    var r=el("button","btn clay","Report to a moderator"); r.type="button";
+    r.addEventListener("click",function(){ reportPerson(a,seat,note.value); });
+    s.appendChild(r);
+    var rp=el("p","foot","They lose their seat at everything upcoming while it's reviewed — including anything in the next couple of days, which is the window that matters.");
+    s.appendChild(rp);
+    var multi=tableCount(confirmedSeats(a.id).length)>1;
+    var b=el("button","btn ghost","Block — never seated together"); b.type="button";
+    b.addEventListener("click",function(){ blockPerson(a,seat); });
+    s.appendChild(b);
+    var bp=el("p","foot",multi
+      ? "They keep their seat at this event but move to another table, and you are never put together again."
+      : "There is only one table here, so blocking gives their seat back and refunds them.");
+    s.appendChild(bp);
+  });
+}
 function openActivitySheet(a){
   openSheet(function(s){
     sheetHead(s,a.title,fmtWhen(a)+" · "+a.venue);
@@ -1476,8 +1649,24 @@ function openActivitySheet(a){
       s.appendChild(ok);
       var g=el("button","btn ghost","See it in Your week"); g.type="button";
       g.addEventListener("click",function(){closeSheet();switchTab("week");}); s.appendChild(g);
+    } else if(full&&(ph==="open"||ph==="confirming")){
+      var pos=myWaitPos(a.id);
+      if(pos){
+        var wn=el("div","note warn");
+        wn.innerHTML="<b>"+ordinal(pos)+" on the waitlist.</b> Seats free up when somebody gives one up, and again when the confirm window closes on anyone who didn't answer.";
+        s.appendChild(wn);
+        var wl=el("button","btn ghost","Leave the waitlist"); wl.type="button";
+        wl.addEventListener("click",function(){leaveWaitlist(a);closeSheet();});
+        s.appendChild(wl);
+      } else {
+        var wb=el("button","btn","Join the waitlist"); wb.type="button";
+        wb.addEventListener("click",function(){joinWaitlist(a);closeSheet();});
+        s.appendChild(wb);
+        s.appendChild(el("p","foot","Free to wait — you're only charged if a seat actually reaches you. "+
+          waitQueue(a.id).length+" ahead of you right now."));
+      }
     } else if(full){
-      s.appendChild(makeEmpty("Full",capOf(a)+" seats and every one of them is taken. Waitlists are the next thing to build."));
+      s.appendChild(makeEmpty("Full",capOf(a)+" seats and every one of them is taken, and it's too late to join."));
     } else if(ph!=="open"&&ph!=="confirming"){
       s.appendChild(makeEmpty("Too late for this one","Seats close when the confirm window does."));
     } else {
@@ -1576,7 +1765,7 @@ function openTableSheet(a){
       if(!isMe&&state.me){
         var m=el("button","dots end","⋯"); m.type="button";
         m.setAttribute("aria-label","Report or block "+p.name);
-        m.addEventListener("click",function(){blockPerson(a,p);});
+        m.addEventListener("click",function(){openPersonSheet(a,p);});
         row.appendChild(m);
       }
       roster.appendChild(row);
@@ -1752,11 +1941,15 @@ function subscribeAll(){
       seatColl(a.id).onSnapshot(function(s){
         state.seats[a.id]=s.docs.map(function(d){return d.data();}).filter(function(x){return x&&x.seatNo;});
         markSeatingDirty();
-        render(); maybePostBot(a);
+        render(); maybePostBot(a); reapUnconfirmed(a); maybePromote(a);
       },function(e){toast(dbFail(e),true);});
       chatColl(a.id).onSnapshot(function(cs){
         var m={}; cs.docs.forEach(function(d){ m[d.id]=(d.data()||{}).messages||[]; });
         state.chats[a.id]=m; refreshChatLog(a.id); render();
+      });
+      waitColl(a.id).onSnapshot(function(ws){
+        state.waits[a.id]=ws.docs.map(function(d){return d.data();}).filter(function(x){return x&&x.studentId;});
+        render(); maybePromote(a);
       });
       signalColl(a.id).onSnapshot(function(s){
         var m={}; s.docs.forEach(function(d){m[d.id]=d.data();});
